@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Header from "./Header";
 import AdminDashboard from "./AdminDashboard";
 import AdminLogin from "./AdminLogin";
 import ClientView from "./ClienteView";
@@ -20,9 +21,10 @@ function App(){
 
   // Se nao tiver '/admin' no final do link, significa que é a cliente, e não a proprietaria. Fazendo assim a cliente entrando no site para fazer o agendamento da unha.
   return(
-    <>
+    <main className="bg-primary min-h-screen w-full pb-10">
+      <Header/>
       <ClientView/>
-    </>
+    </main>
   )
 }
 

@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+
+@theme{
+    --color-primary: #FFF1F2;
+    --color-secondary: #FFF;
+    --color-tertiary: #474C53;
+    --color-info: #828890;
+    --color-destaque: #E11D48;
+    --color-button: #DBDEE2;
+    --color-hd-logo: #881337;
+}
+
+header img{
+    @apply w-10
+}
