@@ -1,31 +1,49 @@
+import { Routes, Route } from "react-router-dom";
 import { useState } from "react";
 import Header from "./Header";
 import AdminDashboard from "./AdminDashboard";
 import AdminLogin from "./AdminLogin";
-import ClientView from "./ClienteView";
+import ClienteView from "./ClienteView";
+import Agendamento from "./Agendamento";
 
-// Variável necessária para ter acesso ao link, em mais específico com final "/admin"
-const caminho = window.location.pathname;
+function App() {
+    // Cria um useState para verificar se a autenticação é verdadeira ou falsa
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-function App(){
+    return (
+            <Routes>
+                <Route
+                    path="/"
+                    element={
+                        <main className="bg-primary min-h-screen w-full pb-10">
+                            <Header />
+                            <ClienteView />
+                        </main>
+                    }
+                />
 
-  // Cria um useState para verificar se a autenticação é verdadeira ou falsa
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  
-  // Verifica se o final do link contém "/admin", se for, a proprietaria vai digitar a senha, se estiver correta, vai cair no Dashboard do site.
-  if (caminho.endsWith('/admin') && isAuthenticated === false){
-    return <AdminLogin onSuccess={() => setIsAuthenticated(true)}/>
-  } else if (caminho.endsWith('/admin') && isAuthenticated === true){
-    return <AdminDashboard onLogout={() => setIsAuthenticated(false)}/>
-  }
+                <Route
+                    path="/agendar"
+                    element={
+                        <main className="bg-primary min-h-screen w-full pb-10">
+                            <Header />
+                            <Agendamento />
+                        </main>
+                    }
+                />
 
-  // Se nao tiver '/admin' no final do link, significa que é a cliente, e não a proprietaria. Fazendo assim a cliente entrando no site para fazer o agendamento da unha.
-  return(
-    <main className="bg-primary min-h-screen w-full pb-10">
-      <Header/>
-      <ClientView/>
-    </main>
-  )
+                <Route
+                    path="/admin"
+                    element={
+                        isAuthenticated ? (
+                            <AdminDashboard onLogout={() => setIsAuthenticated(false)} />
+                        ) : (
+                            <AdminLogin onSuccess={() => setIsAuthenticated(true)} />
+                        )
+                    }
+                />
+            </Routes>
+    );
 }
 
 export default App;
