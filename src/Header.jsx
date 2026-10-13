@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import ButtonSwitch from "./ButtonSwitch";
 import imgUnha from "./assets/img/unha.png";
 
@@ -21,7 +21,9 @@ export default function Header(){
 
                 {
                     pathname === "/dashboard" && (
-                        <ButtonSwitch>Ver como cliente</ButtonSwitch>
+                        <Link to="/admin">
+                            <ButtonSwitch>Voltar para Painel</ButtonSwitch>
+                        </Link>                        
                     )
                 }
         </header>

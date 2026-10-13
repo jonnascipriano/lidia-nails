@@ -1,0 +1,214 @@
+Vou mapear os arquivos do projeto e ler os pontos de entrada, configuração e código para identificar mudanças necessárias, sem alterar nada por enquanto.
+
+Ran terminal command: Get-ChildItem -Force | Select-Object Mode,Name; git status --short; git ls-files
+
+Search for `.`
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\package.json"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\README.md"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\index.html"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\vite.config.js"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\eslint.config.js"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\.gitignore"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\App.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\AdminLogin.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\AdminDashboard.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\Agendamento.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\ClienteView.jsx"
+}
+
+Já identifiquei a estrutura principal e dois arquivos com alterações locais. Agora vou conferir o restante da interface, estilos e fluxo de agendamento/admin, incluindo possíveis problemas detectáveis por lint e build.
+
+Read , lines 1 to 220
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\App.jsx",
+  "view_range": [
+    1,
+    220
+  ]
+}
+
+Read , lines 1 to 260
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\AdminDashboard.jsx",
+  "view_range": [
+    1,
+    260
+  ]
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\Agendamento.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\Header.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\ResumoDashboard.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\Card.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\ButtonSwitch.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\Icones.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\main.jsx"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\index.css"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\App.css"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\public\\icons.svg"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\public\\favicon.svg"
+}
+
+Read , lines 1 to 160
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\Agendamento.jsx",
+  "view_range": [
+    1,
+    160
+  ]
+}
+
+Read , lines 161 to 320
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\Agendamento.jsx",
+  "view_range": [
+    161,
+    320
+  ]
+}
+
+Read , lines 130 to 260
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\AdminDashboard.jsx",
+  "view_range": [
+    130,
+    260
+  ]
+}
+
+Ran terminal command: npm run lint
+
+Ran terminal command: npm run build
+
+Lint e build passam, mas isso não cobre problemas de fluxo e persistência. Estou verificando as alterações locais e localizando os pontos exatos dos principais riscos para te devolver uma lista priorizada e prática.
+
+Ran terminal command: git diff -- src/AdminDashboard.jsx src/Header.jsx
+
+Search for `isAuthenticated|path="/dashboard"|onLogout|setIsAuthenticated`
+
+Search for `1234|localStorage|JSON.parse|window.open|processarAgendamento|type="date"|hor...`
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\App.css"
+}
+
+Read 
+Completed with input: {
+  "path": "C:\\Users\\jonna\\Desktop\\lidia-nails\\src\\assets\\img"
+}
+
+Revisei os arquivos de aplicação e configuração do projeto. **O lint e o build passam**, mas isso não garante que o fluxo funcione bem para clientes reais. Não fiz alterações; há mudanças locais pendentes em `AdminDashboard.jsx` e `Header.jsx`, que considerei na revisão.
+
+### Prioridade alta — antes de usar com clientes
+
+1. **Trocar o `localStorage` por armazenamento compartilhado.** Agendamentos e configurações ficam apenas no navegador em que foram salvos. Assim, clientes em outros aparelhos não veem os horários ocupados, e a Lídia pode não ver os agendamentos feitos por elas. O fluxo está em `Agendamento.jsx` e `AdminDashboard.jsx`. Para uso real, use um backend com banco de dados e validação de disponibilidade no servidor.
+
+2. **Substituir a senha fixa e proteger as rotas administrativas.** A senha `1234` está no código do cliente em `AdminLogin.jsx`, então não é uma autenticação segura. Além disso, `/dashboard` não exige login em `App.jsx`. A autenticação precisa ser validada pelo backend, e tanto o painel quanto o dashboard devem exigir sessão válida.
+
+3. **Corrigir o fluxo dos botões de navegação do admin.** Na alteração local de `AdminDashboard.jsx`, o botão “Dashboard” chama `onLogout`; ao voltar pelo link de `Header.jsx`, o login pode ser solicitado novamente. O logout deve ocorrer apenas no botão “Sair”, e as rotas administrativas devem preservar a sessão.
+
+4. **Definir quando um agendamento é realmente confirmado.** Hoje a reserva é gravada antes da abertura do WhatsApp em `Agendamento.jsx`. A cliente pode abandonar a conversa e mesmo assim deixar o horário bloqueado. Defina uma etapa explícita de confirmação — idealmente registrada pelo servidor — e informe à cliente se o pedido foi apenas enviado ou confirmado.
+
+### Prioridade média — confiabilidade do agendamento
+
+5. **Impedir datas passadas e reforçar a validação do formulário.** O campo de data não define uma data mínima, e o nome é aceito sem validação significativa. Em `Agendamento.jsx`, valide os dados no envio e no servidor, além de limitar as datas disponíveis.
+
+6. **Garantir horários iniciais para clientes novas.** A tela começa sem horários em `Agendamento.jsx`. Os horários padrão do painel só são salvos quando alguém salva as configurações em `AdminDashboard.jsx`. Defina valores iniciais compartilhados para que a agenda não apareça vazia numa instalação nova.
+
+7. **Tratar dados inválidos salvos no navegador.** Os dados de `localStorage` são analisados com `JSON.parse` sem validação em `Agendamento.jsx` e `AdminDashboard.jsx`. Dados malformados podem impedir essas telas de carregar; valide o formato e mostre um erro recuperável.
+
+### Ajustes de produto e manutenção
+
+8. **Ligar o dashboard a dados reais.** Os valores de faturamento e de agendamentos em `ResumoDashboard.jsx` estão fixos; devem vir dos agendamentos armazenados no backend.
+
+9. **Completar os metadados e a documentação.** O título da página ainda é genérico em `index.html`, e o `README.md` continua sendo o texto padrão do Vite. Atualize-os com o nome do negócio, instruções de execução e informações de implantação.
+
+10. **Adicionar testes para os fluxos críticos.** Não encontrei testes para login, proteção de rotas, conflitos de horário, dias fechados ou confirmação de agendamento. O lint e o build passaram, mas não exercitam esses cenários.
+
+**Em resumo:** para uma demonstração local, o estado atual pode servir. Para aceitar agendamentos reais, eu priorizaria backend e autenticação, depois corrigiria a navegação do admin e definiria a regra de confirmação.
