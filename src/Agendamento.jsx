@@ -74,6 +74,7 @@ export default function Agendamento() {
             duracao: servico.tempoEstimado,
             nomeCliente: nome,
             servico: servico.nome,
+            valor: servico.valor,
         };
 
         const todosAgendamentos = [...agendamentosJaFeitos, novoAgendamento];
