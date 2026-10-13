@@ -1,19 +1,27 @@
+import { useLocation } from "react-router-dom";
 import ButtonSwitch from "./ButtonSwitch";
+import imgUnha from "./assets/img/unha.png";
 
 export default function Header(){
-    const caminho = window.location.pathname
+    const {pathname} = useLocation()
+
     return(
         <header className="flex justify-between px-5 py-4 items-center bg-secondary">
             <div className="flex items-center gap-2">
-                <img src="./src/assets/img/logo.jpg"/>
-                <h1 className="text-hd-logo font-medium">Lídia Oliveira</h1>
+                {/* <img src=""/> */}
+                <p>{'<logo>'}</p>
+                <span className="text-hd-logo font-bold text-2xl">Lídia Oliveira</span>
             </div>
-                {caminho.endsWith("/admin") && (
-                    <ButtonSwitch>Ver como cliente</ButtonSwitch>
-                )}
+
                 {
-                    !caminho.endsWith('/admin') && (
-                        <img src="./src/assets/img/unha.png"/>
+                    pathname === "/" && (
+                        <img src={imgUnha} alt="img de unha"/>
+                    )
+                }
+
+                {
+                    pathname === "/dashboard" && (
+                        <ButtonSwitch>Ver como cliente</ButtonSwitch>
                     )
                 }
         </header>

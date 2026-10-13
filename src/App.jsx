@@ -5,6 +5,7 @@ import AdminDashboard from "./AdminDashboard";
 import AdminLogin from "./AdminLogin";
 import ClienteView from "./ClienteView";
 import Agendamento from "./Agendamento";
+import ResumoDashboard from "./ResumoDashboard";
 
 function App() {
     // Cria um useState para verificar se a autenticação é verdadeira ou falsa
@@ -40,6 +41,16 @@ function App() {
                         ) : (
                             <AdminLogin onSuccess={() => setIsAuthenticated(true)} />
                         )
+                    }
+                />
+
+                <Route
+                    path="/dashboard"
+                    element={
+                        <main>
+                            <Header/>
+                            <ResumoDashboard/>
+                        </main>
                     }
                 />
             </Routes>

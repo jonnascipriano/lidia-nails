@@ -11,6 +11,10 @@
     --color-hd-logo: #881337;
 }
 
+h1{
+    @apply font-bold text-4xl tracking-wide
+}
+
 header img{
     @apply w-10
 }
