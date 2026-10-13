@@ -82,7 +82,7 @@ export default function AdminDashboard({ onLogout }) {
                     <h1 className="text-2xl font-bold text-tertiary">Painel de Controle</h1>
                     <p className="text-sm text-gray-500">Olá, Lídia! Gerencie sua agenda aqui.</p>
                 </div>
-                <Link to="/dashboard" onClick={onLogout}>
+                <Link to="/dashboard">
                     <ButtonSwitch>Dashboard</ButtonSwitch>
                 </Link>
                 <button onClick={onLogout} className="text-destaque font-medium underline hover:text-red-500 transition-colors">
