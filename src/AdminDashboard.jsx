@@ -19,7 +19,7 @@ export default function AdminDashboard({ onLogout }) {
             setHorariosDisponiveis(config.horariosDisponiveis || []);
         } else {
             // Se for a primeira vez, coloca uns horários padrão
-            setHorariosDisponiveis(["08:00", "09:00", "10:00", "14:00", "15:00"]);
+            setHorariosDisponiveis(["08:00"]);
         }
     }, []);
 
