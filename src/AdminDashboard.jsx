@@ -17,6 +17,11 @@ const gerarHorariosPadrao = () => {
 
 const ordenarHorarios = (lista) => [...new Set(lista)].sort((a, b) => a.localeCompare(b));
 
+const converterParaMinutos = (horario) => {
+    const [horas, minutos] = horario.split(":").map(Number);
+    return horas * 60 + minutos;
+};
+
 export default function AdminDashboard({ onLogout }) {
     const [diasFechados, setDiasFechados] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
@@ -165,10 +170,22 @@ export default function AdminDashboard({ onLogout }) {
             : horariosDisponiveis
         : [];
     const horariosParaEditar = ordenarHorarios([...horariosDisponiveis, ...horariosDoDiaSelecionado]);
-    const horariosAgendadosDoDia = new Set(
-        agendamentos
-            .filter((agendamento) => agendamento.data === dataCustom)
-            .map((agendamento) => agendamento.horario)
+    const agendamentosDoDiaSelecionado = agendamentos.filter(
+        (agendamento) => agendamento.data === dataCustom
+    );
+    const horariosOcupadosDoDia = new Set(
+        horariosParaEditar.filter((horario) => {
+            const inicioHorario = converterParaMinutos(horario);
+            const fimHorario = inicioHorario + 15;
+
+            return agendamentosDoDiaSelecionado.some((agendamento) => {
+                const inicioAgendado = converterParaMinutos(agendamento.horario);
+                const duracaoAgendada = Number(agendamento.duracao) || 15;
+                const fimAgendado = inicioAgendado + duracaoAgendada;
+
+                return inicioHorario < fimAgendado && fimHorario > inicioAgendado;
+            });
+        })
     );
 
     return (
@@ -295,7 +312,7 @@ export default function AdminDashboard({ onLogout }) {
                                 Horários de {dataCustom.split("-").reverse().join("/")}
                             </p>
                             <p className="mb-4 text-xs text-gray-500">
-                                Os horários removidos e adicionados abaixo afetam somente esta data.
+                                Os horários removidos e adicionados abaixo afetam somente esta data. Reservas ocupam os horários seguintes conforme a duração do serviço.
                             </p>
                             <div className="mb-5 flex flex-col gap-2 sm:flex-row">
                                 <input
@@ -320,34 +337,34 @@ export default function AdminDashboard({ onLogout }) {
                                 <div className="flex flex-wrap gap-2">
                                     {horariosParaEditar.map((hora) => {
                                         const estaDisponivel = horariosDoDiaSelecionado.includes(hora);
-                                        const estaAgendado = horariosAgendadosDoDia.has(hora);
+                                        const estaOcupado = horariosOcupadosDoDia.has(hora);
                                         return (
                                             <button
                                                 key={`${dataCustom}-${hora}`}
                                                 type="button"
                                                 onClick={() => {
-                                                    if (!estaAgendado) {
+                                                    if (!estaOcupado) {
                                                         alterarDisponibilidadeDoHorario(dataCustom, hora, !estaDisponivel);
                                                     }
                                                 }}
-                                                disabled={estaAgendado}
+                                                disabled={estaOcupado}
                                                 className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
-                                                    estaAgendado
+                                                    estaOcupado
                                                         ? "cursor-not-allowed border-amber-200 bg-amber-50 text-amber-800"
                                                         : estaDisponivel
                                                         ? "border-green-200 bg-green-50 text-green-800 hover:bg-red-50 hover:text-red-700"
                                                         : "border-gray-200 bg-white text-gray-400 hover:bg-green-50 hover:text-green-800"
                                                 }`}
                                                 title={
-                                                    estaAgendado
-                                                        ? "Este horário já está reservado por uma cliente"
+                                                    estaOcupado
+                                                        ? "Este horário está ocupado por uma reserva durante a duração do serviço"
                                                         : estaDisponivel
                                                             ? "Remover somente deste dia"
                                                             : "Restaurar neste dia"
                                                 }
                                             >
-                                                {hora} · {estaAgendado
-                                                    ? "Agendado"
+                                                {hora} · {estaOcupado
+                                                    ? "Ocupado"
                                                     : estaDisponivel
                                                         ? "Disponível — remover"
                                                         : "Removido — restaurar"}
