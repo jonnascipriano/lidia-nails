@@ -6,15 +6,16 @@ export default function ResumoDashboard() {
     const [resumoMes, setResumoMes] = useState({ qtd: 0, valor: 0 });
 
     useEffect(() => {
-        const agendamentosSalvos = localStorage.getItem("agendamentos");
-        if (agendamentosSalvos) {
-            const agendamentos = JSON.parse(agendamentosSalvos);
+        const atualizarResumo = () => {
+            const agendamentosSalvos = localStorage.getItem("agendamentos");
+            const agendamentos = agendamentosSalvos ? JSON.parse(agendamentosSalvos) : [];
 
             const hoje = new Date();
             const ano = hoje.getFullYear();
             const mes = String(hoje.getMonth() + 1).padStart(2, "0");
             const dia = String(hoje.getDate()).padStart(2, "0");
             const dataHojeStr = `${ano}-${mes}-${dia}`;
+            const agoraEmSegundos = hoje.getHours() * 3600 + hoje.getMinutes() * 60 + hoje.getSeconds();
 
             const diaSemana = hoje.getDay();
             const diffParaSegunda = diaSemana === 0 ? 6 : diaSemana - 1;
@@ -34,6 +35,19 @@ export default function ResumoDashboard() {
             let calcMes = { qtd: 0, valor: 0 };
 
             agendamentos.forEach((ag) => {
+                if (ag.data > dataHojeStr) return;
+
+                if (ag.data === dataHojeStr) {
+                    if (typeof ag.horario !== "string") return;
+
+                    const [horas, minutos] = ag.horario.split(":").map(Number);
+                    if (!Number.isFinite(horas) || !Number.isFinite(minutos)) return;
+
+                    const inicioEmSegundos = horas * 3600 + minutos * 60;
+                    const duracaoEmSegundos = (Number(ag.duracao) || 0) * 60;
+                    if (inicioEmSegundos + duracaoEmSegundos > agoraEmSegundos) return;
+                }
+
                 const valorNumerico = Number(ag.valor) || 0;
 
                 if (ag.data === dataHojeStr) {
@@ -51,11 +65,14 @@ export default function ResumoDashboard() {
                     calcMes.valor += valorNumerico;
                 }
             });
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setResumoHoje(calcHoje);
             setResumoSemana(calcSemana);
             setResumoMes(calcMes);
-        }
+        };
+
+        atualizarResumo();
+        const intervalo = setInterval(atualizarResumo, 60 * 1000);
+        return () => clearInterval(intervalo);
     }, []);
 
     return (
