@@ -1,10 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 
-// Função mágica que transforma "14:30" em minutos (870) para o computador calcular
+const gerarHorariosPadrao = () => {
+    const horarios = [];
+    for (let hora = 7; hora <= 18; hora++) {
+        for (let min = 0; min < 60; min += 15) {
+            if (hora === 18 && min > 0) break;
+            const horaFormatada = String(hora).padStart(2, "0");
+            const minFormatado = String(min).padStart(2, "0");
+            horarios.push(`${horaFormatada}:${minFormatado}`);
+        }
+    }
+    return horarios;
+};
+
 const converterParaMinutos = (horaString) => {
     const [horas, minutos] = horaString.split(":").map(Number);
     return horas * 60 + minutos;
+};
+
+const obterHorariosDoDia = (dataEscolhida, configSalao) => {
+    if (!dataEscolhida) return [];
+
+    if (configSalao?.diasCustomizados && Object.prototype.hasOwnProperty.call(configSalao.diasCustomizados, dataEscolhida)) {
+        return configSalao.diasCustomizados[dataEscolhida];
+    }
+
+    if (Array.isArray(configSalao?.horariosDisponiveis) && configSalao.horariosDisponiveis.length > 0) {
+        return configSalao.horariosDisponiveis;
+    }
+
+    return gerarHorariosPadrao();
 };
 
 export default function Agendamento() {
@@ -14,26 +40,40 @@ export default function Agendamento() {
     const [nome, setNome] = useState("");
     const [dataEscolhida, setDataEscolhida] = useState("");
     const [horarioEscolhido, setHorarioEscolhido] = useState("");
-
-    // O que vem do painel da Lídia
-    const [configSalao, setConfigSalao] = useState({ diasFechados: [], horariosDisponiveis: [] });
-    // O que vem das clientes que já agendaram
-    const [agendamentosJaFeitos, setAgendamentosJaFeitos] = useState([]);
-
-    useEffect(() => {
-        // Puxa as regras de folga e horários do painel
+    const [configSalao] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        if (configSalva) setConfigSalao(JSON.parse(configSalva));
+        if (!configSalva) {
+            return { diasFechados: [], horariosDisponiveis: [], diasCustomizados: {} };
+        }
 
-        // Puxa os agendamentos antigos para saber o que já está ocupado
+        try {
+            const config = JSON.parse(configSalva);
+            return {
+                diasFechados: config.diasFechados || [],
+                horariosDisponiveis: config.horariosDisponiveis || [],
+                diasCustomizados: config.diasCustomizados || {},
+            };
+        } catch {
+            return { diasFechados: [], horariosDisponiveis: [], diasCustomizados: {} };
+        }
+    });
+
+    const [agendamentosJaFeitos, setAgendamentosJaFeitos] = useState(() => {
         const agendamentosSalvos = localStorage.getItem("agendamentos");
-        if (agendamentosSalvos) setAgendamentosJaFeitos(JSON.parse(agendamentosSalvos));
-    }, []);
+        if (!agendamentosSalvos) {
+            return [];
+        }
+
+        try {
+            return JSON.parse(agendamentosSalvos);
+        } catch {
+            return [];
+        }
+    });
 
     if (!servico) {
         return (
-            <div className="min-h-screen p-5 flex flex-col items-center justify-center">
+            <div className="min-h-screen p-5 flex flex-col items-center justify-center text-tertiary">
                 <p>Nenhum serviço selecionado.</p>
                 <Link to="/" className="text-destaque font-bold mt-4">
                     Voltar ao Catálogo
@@ -41,36 +81,46 @@ export default function Agendamento() {
             </div>
         );
     }
-    // Verifica se a lista existe antes de tentar procurar a data nela
-    const isDiaFechado = Array.isArray(configSalao.diasFechados) && configSalao.diasFechados.includes(dataEscolhida);
 
-    // FILTRO INTELIGENTE DE HORÁRIOS
-    const horariosLivres = configSalao.horariosDisponiveis.filter((horaCandidata) => {
-        // Calcula que horas esse serviço começa e termina
+    const isDiaFechado = Array.isArray(configSalao.diasFechados) && configSalao.diasFechados.includes(dataEscolhida);
+    const horariosDoDiaBase = obterHorariosDoDia(dataEscolhida, configSalao);
+    const horarioSelecionadoValido = horarioEscolhido && horariosDoDiaBase.includes(horarioEscolhido) ? horarioEscolhido : "";
+
+    const horariosLivres = horariosDoDiaBase.filter((horaCandidata) => {
+        if (!dataEscolhida) return false;
+
         const inicioNovoServico = converterParaMinutos(horaCandidata);
         const fimNovoServico = inicioNovoServico + servico.tempoEstimado;
+        const agendamentosDoDia = agendamentosJaFeitos.filter((agendamento) => agendamento.data === dataEscolhida);
 
-        // Pega só os agendamentos que já existem no dia que a cliente clicou
-        const agendamentosDoDia = agendamentosJaFeitos.filter((a) => a.data === dataEscolhida);
-
-        // Verifica se existe algum conflito de tempo
         const temConflito = agendamentosDoDia.some((agendado) => {
             const inicioAgendado = converterParaMinutos(agendado.horario);
-            const fimAgendado = inicioAgendado + agendado.duracao;
-
-            // Se o novo começar antes do antigo terminar E o novo terminar depois do antigo começar, é choque!
+            const fimAgendado = inicioAgendado + (agendado.duracao || servico.tempoEstimado);
             return inicioNovoServico < fimAgendado && fimNovoServico > inicioAgendado;
         });
 
-        // Só mantém o botão na tela se NÃO tiver conflito
         return !temConflito;
     });
 
     const processarAgendamento = () => {
-        // 1. Bloqueia o horário na tela da cliente (para não clicar duas vezes sem querer)
+        if (!nome.trim()) {
+            alert("Digite seu nome antes de continuar.");
+            return;
+        }
+
+        if (!dataEscolhida) {
+            alert("Selecione uma data.");
+            return;
+        }
+
+        if (!horarioSelecionadoValido) {
+            alert("Selecione um horário disponível.");
+            return;
+        }
+
         const novoAgendamento = {
             data: dataEscolhida,
-            horario: horarioEscolhido,
+            horario: horarioSelecionadoValido,
             duracao: servico.tempoEstimado,
             nomeCliente: nome,
             servico: servico.nome,
@@ -81,117 +131,126 @@ export default function Agendamento() {
         localStorage.setItem("agendamentos", JSON.stringify(todosAgendamentos));
         setAgendamentosJaFeitos(todosAgendamentos);
 
-        // ==========================================
-        // 2. INTEGRAÇÃO COM O WHATSAPP
-        // ==========================================
-
-        // ATENÇÃO: Coloque o número real da Lídia aqui (55 + DDD + Número)
         const numeroLidia = "5588992137098";
-
-        // Transforma a data de YYYY-MM-DD para DD/MM/YYYY
         const dataFormatada = dataEscolhida.split("-").reverse().join("/");
 
-        // Monta o texto que vai chegar no celular da Lídia
         const mensagem =
             `Olá, Lídia! Gostaria de agendar um horário. 💅\n\n` +
             `*Serviço:* ${servico.nome}\n` +
             `*Nome:* ${nome}\n` +
             `*Data:* ${dataFormatada}\n` +
-            `*Horário:* ${horarioEscolhido}\n` +
+            `*Horário:* ${horarioSelecionadoValido}\n` +
             `*Valor:* R$ ${servico.valor}\n\n` +
             `Podemos confirmar?`;
 
-        // Transforma o texto num link seguro e abre o WhatsApp numa nova aba
         const urlWhatsApp = `https://wa.me/${numeroLidia}?text=${encodeURIComponent(mensagem)}`;
         window.open(urlWhatsApp, "_blank");
 
-        // 3. Limpa os campos para o próximo agendamento
         setHorarioEscolhido("");
         setNome("");
+        setDataEscolhida("");
     };
 
     return (
-        <section className="min-h-screen p-5">
-            <Link to="/" className="text-tertiary mb-6 inline-block font-medium">
-                ← Voltar
-            </Link>
-            <h1 className="text-2xl font-bold text-tertiary mb-2">Agendar Serviço</h1>
-
-            <div className="bg-white p-4 rounded-xl border border-gray-100 mb-6 shadow-sm">
-                <h2 className="font-bold text-destaque">{servico.nome}</h2>
-                <p className="text-tertiary text-sm">
-                    Valor: R$ {servico.valor} | Tempo: {servico.tempoEstimado} min
-                </p>
-            </div>
-
-            <form className="flex flex-col gap-5">
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-tertiary">Seu Nome</label>
-                    <input
-                        type="text"
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        placeholder="Ex: Maria Silva"
-                        className="border rounded-lg p-3 focus:outline-none focus:border-destaque"
-                    />
+        <section className="min-h-screen bg-primary p-5 text-tertiary">
+            <div className="mx-auto max-w-4xl rounded-3xl bg-white p-6 shadow-lg">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-sm uppercase tracking-[0.2em] text-destaque">Agendamento</p>
+                        <h1 className="mt-2 text-3xl font-bold text-tertiary">{servico.nome}</h1>
+                    </div>
+                    <Link to="/" className="text-sm font-medium text-destaque underline">
+                        Voltar
+                    </Link>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-tertiary">Escolha a Data</label>
-                    <input
-                        type="date"
-                        value={dataEscolhida}
-                        onChange={(e) => {
-                            setDataEscolhida(e.target.value);
-                            setHorarioEscolhido("");
-                        }}
-                        className="border rounded-lg p-3 focus:outline-none focus:border-destaque"
-                    />
+                <div className="mb-6 rounded-2xl bg-primary p-4 text-tertiary">
+                    <p className="text-sm text-info">Resumo do serviço</p>
+                    <div className="mt-2 flex items-center justify-between gap-4">
+                        <span>{servico.tempoEstimado} min</span>
+                        <strong className="text-destaque">R$ {servico.valor}</strong>
+                    </div>
                 </div>
 
-                {dataEscolhida && (
-                    <div className="flex flex-col gap-2 mt-2">
-                        <label className="text-sm font-medium text-tertiary">Horários Disponíveis</label>
+                <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-4">
+                        <label className="block">
+                            <span className="mb-2 block font-medium">Seu nome</span>
+                            <input
+                                type="text"
+                                value={nome}
+                                onChange={(event) => setNome(event.target.value)}
+                                className="w-full rounded-xl border border-gray-300 p-3 focus:border-destaque focus:outline-none"
+                                placeholder="Digite seu nome"
+                            />
+                        </label>
+
+                        <label className="block">
+                            <span className="mb-2 block font-medium">Data</span>
+                            <input
+                                type="date"
+                                value={dataEscolhida}
+                                onChange={(event) => {
+                                    setDataEscolhida(event.target.value);
+                                    setHorarioEscolhido("");
+                                }}
+                                min={new Date().toISOString().split("T")[0]}
+                                className="w-full rounded-xl border border-gray-300 p-3 focus:border-destaque focus:outline-none"
+                            />
+                        </label>
+                    </div>
+
+                    <div>
+                        <p className="mb-2 font-medium">Horários disponíveis</p>
 
                         {isDiaFechado ? (
-                            <div className="bg-red-50 text-red-500 p-4 rounded-lg text-center border border-red-200">
-                                O salão estará fechado neste dia.
+                            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                                Este dia está fechado para agendamento.
+                            </div>
+                        ) : !dataEscolhida ? (
+                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                                Escolha uma data para visualizar os horários.
                             </div>
                         ) : horariosLivres.length === 0 ? (
-                            <div className="bg-orange-50 text-orange-600 p-4 rounded-lg text-center border border-orange-200">
-                                Todos os horários esgotados para esta data!
+                            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700">
+                                Nenhum horário disponível para essa data.
                             </div>
                         ) : (
-                            <div className="grid grid-cols-3 gap-3">
-                                {/* Aqui trocamos configSalao.horariosDisponiveis por horariosLivres! */}
-                                {horariosLivres.map((hora) => (
+                            <div className="flex flex-wrap gap-2">
+                                {horariosLivres.map((horario) => (
                                     <button
-                                        key={hora}
+                                        key={horario}
                                         type="button"
-                                        onClick={() => setHorarioEscolhido(hora)}
-                                        className={`p-3 rounded-lg border font-medium transition-colors ${
-                                            horarioEscolhido === hora
-                                                ? "bg-destaque text-white border-destaque"
-                                                : "bg-white text-tertiary border-gray-300 hover:border-destaque"
+                                        onClick={() => setHorarioEscolhido(horario)}
+                                        className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
+                                            horarioSelecionadoValido === horario
+                                                ? "border-destaque bg-destaque text-white"
+                                                : "border-destaque/30 bg-primary text-tertiary hover:bg-secondary"
                                         }`}
                                     >
-                                        {hora}
+                                        {horario}
                                     </button>
                                 ))}
                             </div>
                         )}
                     </div>
-                )}
+                </div>
 
-                <button
-                    type="button"
-                    onClick={processarAgendamento}
-                    disabled={!nome || !dataEscolhida || !horarioEscolhido}
-                    className="bg-destaque text-white font-bold rounded-lg p-4 mt-6 hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                    Confirmar Agendamento
-                </button>
-            </form>
+                <div className="mt-8 flex items-center justify-between gap-4 border-t border-gray-200 pt-5">
+                    <div className="text-sm text-gray-600">
+                        {horarioSelecionadoValido ? `Horário selecionado: ${horarioSelecionadoValido}` : "Nenhum horário selecionado"}
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={processarAgendamento}
+                        disabled={!nome.trim() || !dataEscolhida || !horarioSelecionadoValido || isDiaFechado}
+                        className="rounded-xl bg-destaque px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                        Agendar no WhatsApp
+                    </button>
+                </div>
+            </div>
         </section>
     );
 }
