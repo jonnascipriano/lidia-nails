@@ -33,7 +33,6 @@ export default function AdminDashboard({ onLogout }) {
     const [diasFechados, setDiasFechados] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
         if (!configSalva) return [];
-
         try {
             const config = JSON.parse(configSalva);
             return config.diasFechados || [];
@@ -45,9 +44,7 @@ export default function AdminDashboard({ onLogout }) {
     const [horariosDisponiveis, setHorariosDisponiveis] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
         const horariosPadrao = gerarHorariosPadrao();
-
         if (!configSalva) return horariosPadrao;
-
         try {
             const config = JSON.parse(configSalva);
             return config.horariosDisponiveis?.length ? config.horariosDisponiveis : horariosPadrao;
@@ -59,7 +56,6 @@ export default function AdminDashboard({ onLogout }) {
     const [diasCustomizados, setDiasCustomizados] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
         if (!configSalva) return {};
-
         try {
             const config = JSON.parse(configSalva);
             return config.diasCustomizados || {};
@@ -76,13 +72,10 @@ export default function AdminDashboard({ onLogout }) {
     const [agendamentos, setAgendamentos] = useState(() => {
         const agendamentosSalvos = localStorage.getItem("agendamentos");
         if (!agendamentosSalvos) return [];
-
         try {
             const lista = JSON.parse(agendamentosSalvos);
             return [...lista].sort((a, b) => {
-                if (a.data === b.data) {
-                    return a.horario.localeCompare(b.horario);
-                }
+                if (a.data === b.data) return a.horario.localeCompare(b.horario);
                 return a.data.localeCompare(b.data);
             });
         } catch {
@@ -90,6 +83,49 @@ export default function AdminDashboard({ onLogout }) {
         }
     });
 
+    // === LÓGICA DE RESUMO FINANCEIRO ===
+    const hojeData = new Date();
+    const dataHojeStr = obterDataISO(hojeData);
+
+    const diaSemana = hojeData.getDay();
+    const diffParaSegunda = diaSemana === 0 ? 6 : diaSemana - 1;
+    const segunda = new Date(hojeData);
+    segunda.setDate(hojeData.getDate() - diffParaSegunda);
+    const dataSegundaStr = obterDataISO(segunda);
+    
+    const domingo = new Date(segunda);
+    domingo.setDate(segunda.getDate() + 6);
+    const dataDomingoStr = obterDataISO(domingo);
+
+    let faturamentoHoje = 0;
+    let faturamentoSemana = 0;
+    let qtdHoje = 0;
+    let qtdSemana = 0;
+
+    agendamentos.forEach(ag => {
+        const valorNum = Number(ag.valor) || 0;
+        if (ag.data === dataHojeStr) {
+            faturamentoHoje += valorNum;
+            qtdHoje++;
+        }
+        if (ag.data >= dataSegundaStr && ag.data <= dataDomingoStr) {
+            faturamentoSemana += valorNum;
+            qtdSemana++;
+        }
+    });
+
+    // === AGRUPAMENTO DE AGENDAMENTOS POR DIA ===
+    const agendamentosAgrupados = agendamentos.reduce((grupos, agendamento) => {
+        if (!grupos[agendamento.data]) {
+            grupos[agendamento.data] = [];
+        }
+        grupos[agendamento.data].push(agendamento);
+        return grupos;
+    }, {});
+    // Pega as datas agrupadas e ordena da mais próxima para a mais distante
+    const datasComAgendamento = Object.keys(agendamentosAgrupados).sort();
+
+    // === FUNÇÕES DE AÇÃO COM MELHORIAS ===
     const salvarConfiguracoes = () => {
         const config = { diasFechados, horariosDisponiveis, diasCustomizados };
         localStorage.setItem("configSalao", JSON.stringify(config));
@@ -97,10 +133,16 @@ export default function AdminDashboard({ onLogout }) {
     };
 
     const adicionarDia = () => {
-        if (novoDia && !diasFechados.includes(novoDia)) {
-            setDiasFechados([...diasFechados, novoDia].sort());
-            setNovoDia("");
+        if (!novoDia) {
+            alert("Por favor, selecione uma data primeiro.");
+            return;
         }
+        if (diasFechados.includes(novoDia)) {
+            alert("Este dia já está na lista de dias fechados.");
+            return;
+        }
+        setDiasFechados([...diasFechados, novoDia].sort());
+        setNovoDia("");
     };
 
     const removerDia = (diaParaRemover) => {
@@ -108,10 +150,16 @@ export default function AdminDashboard({ onLogout }) {
     };
 
     const adicionarHorario = () => {
-        if (novoHorario && !horariosDisponiveis.includes(novoHorario)) {
-            setHorariosDisponiveis(ordenarHorarios([...horariosDisponiveis, novoHorario]));
-            setNovoHorario("");
+        if (!novoHorario) {
+            alert("Por favor, selecione um horário primeiro.");
+            return;
         }
+        if (horariosDisponiveis.includes(novoHorario)) {
+            alert("Este horário já existe na lista padrão.");
+            return;
+        }
+        setHorariosDisponiveis(ordenarHorarios([...horariosDisponiveis, novoHorario]));
+        setNovoHorario("");
     };
 
     const removerHorario = (horaParaRemover) => {
@@ -131,15 +179,8 @@ export default function AdminDashboard({ onLogout }) {
     };
 
     const adicionarHorarioExtra = () => {
-        if (!dataCustom) {
-            alert("Selecione uma data antes de adicionar um horário.");
-            return;
-        }
-
-        if (!horarioExtra) {
-            alert("Selecione o horário que deseja adicionar.");
-            return;
-        }
+        if (!dataCustom) return alert("Selecione uma data antes de adicionar um horário.");
+        if (!horarioExtra) return alert("Selecione o horário que deseja adicionar.");
 
         setDiasCustomizados((atual) => {
             const horariosDoDia = Object.prototype.hasOwnProperty.call(atual, dataCustom)
@@ -162,10 +203,15 @@ export default function AdminDashboard({ onLogout }) {
         });
     };
 
-    const removerAgendamento = (indexParaRemover) => {
+    // Nova lógica de remover para evitar bugs (compara os dados em vez de usar o INDEX)
+    const removerAgendamento = (agendamentoParaRemover) => {
         const confirmacao = window.confirm("Tem certeza que deseja remover este agendamento? Ele voltará a ficar disponível para outras clientes.");
         if (confirmacao) {
-            const novaLista = agendamentos.filter((_, index) => index !== indexParaRemover);
+            const novaLista = agendamentos.filter((ag) => 
+                !(ag.data === agendamentoParaRemover.data && 
+                  ag.horario === agendamentoParaRemover.horario && 
+                  ag.nomeCliente === agendamentoParaRemover.nomeCliente)
+            );
             setAgendamentos(novaLista);
             localStorage.setItem("agendamentos", JSON.stringify(novaLista));
         }
@@ -177,9 +223,8 @@ export default function AdminDashboard({ onLogout }) {
             : horariosDisponiveis
         : [];
     const horariosParaEditar = ordenarHorarios([...horariosDisponiveis, ...horariosDoDiaSelecionado]);
-    const agendamentosDoDiaSelecionado = agendamentos.filter(
-        (agendamento) => agendamento.data === dataCustom
-    );
+    const agendamentosDoDiaSelecionado = agendamentos.filter((agendamento) => agendamento.data === dataCustom);
+    
     const horariosOcupadosDoDia = new Set(
         horariosParaEditar.filter((horario) => {
             const inicioHorario = converterParaMinutos(horario);
@@ -189,11 +234,11 @@ export default function AdminDashboard({ onLogout }) {
                 const inicioAgendado = converterParaMinutos(agendamento.horario);
                 const duracaoAgendada = Number(agendamento.duracao) || 15;
                 const fimAgendado = inicioAgendado + duracaoAgendada;
-
                 return inicioHorario < fimAgendado && fimHorario > inicioAgendado;
             });
         })
     );
+
     const diasProximos = Array.from({ length: 14 }, (_, indice) => {
         const data = new Date();
         data.setHours(12, 0, 0, 0);
@@ -201,15 +246,9 @@ export default function AdminDashboard({ onLogout }) {
 
         return {
             valor: obterDataISO(data),
-            rotulo: indice === 0
-                ? "Hoje"
-                : indice === 1
-                    ? "Amanhã"
-                    : data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+            rotulo: indice === 0 ? "Hoje" : indice === 1 ? "Amanhã" : data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
             data: data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-            quantidadeAgendamentos: agendamentos.filter(
-                (agendamento) => agendamento.data === obterDataISO(data)
-            ).length,
+            quantidadeAgendamentos: agendamentos.filter((agendamento) => agendamento.data === obterDataISO(data)).length,
         };
     });
 
@@ -232,6 +271,20 @@ export default function AdminDashboard({ onLogout }) {
                         </button>
                     </div>
                 </header>
+
+                {/* ===== NOVA SESSÃO: PREVISÃO DE FATURAMENTO ===== */}
+                <div className="mb-8 grid gap-4 md:grid-cols-2">
+                    <div className="rounded-[24px] bg-gradient-to-r from-gray-800 to-gray-900 p-6 shadow-md text-white">
+                        <p className="text-sm text-gray-300 font-medium">Previsão para Hoje</p>
+                        <h2 className="mt-2 text-4xl font-bold text-green-400">R$ {faturamentoHoje}</h2>
+                        <p className="mt-1 text-sm text-gray-400">{qtdHoje} {qtdHoje === 1 ? 'agendamento' : 'agendamentos'} para hoje</p>
+                    </div>
+                    <div className="rounded-[24px] border border-destaque/20 bg-white p-6 shadow-sm">
+                        <p className="text-sm text-gray-500 font-medium">Previsão da Semana <span className="text-xs font-normal">(Seg a Dom)</span></p>
+                        <h2 className="mt-2 text-4xl font-bold text-destaque">R$ {faturamentoSemana}</h2>
+                        <p className="mt-1 text-sm text-gray-500">{qtdSemana} {qtdSemana === 1 ? 'agendamento' : 'agendamentos'} esta semana</p>
+                    </div>
+                </div>
 
                 <div className="mb-8 grid gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm">
@@ -433,37 +486,60 @@ export default function AdminDashboard({ onLogout }) {
                     )}
                 </div>
 
-                <button onClick={salvarConfiguracoes} className="mt-8 w-full rounded-2xl bg-destaque px-5 py-4 text-lg font-bold text-white shadow-md transition hover:scale-[1.01]">
-                    Salvar Alterações
-                </button>
+                <div className="mt-8 rounded-2xl bg-indigo-50 p-4 border border-indigo-100 flex items-center justify-between">
+                    <p className="text-sm text-indigo-800 font-medium">Lembre-se de salvar para aplicar as alterações de horários e folgas na agenda das clientes.</p>
+                    <button onClick={salvarConfiguracoes} className="rounded-xl bg-destaque px-6 py-3 font-bold text-white shadow-md transition hover:scale-[1.02]">
+                        Salvar Alterações
+                    </button>
+                </div>
 
+                {/* ===== NOVA SESSÃO: AGENDAMENTOS AGRUPADOS POR DIA ===== */}
                 <div className="mt-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
-                    <h2 className="mb-4 text-xl font-bold text-tertiary">Próximos Agendamentos</h2>
+                    <h2 className="mb-6 text-xl font-bold text-tertiary">Agenda de Clientes</h2>
 
-                    {agendamentos.length === 0 ? (
+                    {datasComAgendamento.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
                             Ainda não há clientes agendadas.
                         </div>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {agendamentos.map((agendamento, index) => (
-                                <div key={index} className="relative flex flex-col gap-2 rounded-2xl border border-gray-200 bg-primary p-4">
-                                    <button 
-                                        onClick={() => removerAgendamento(index)}
-                                        className="absolute right-3 top-3 p-1 text-sm font-bold text-red-500 hover:text-red-700"
-                                        title="Remover Agendamento"
-                                    >
-                                        ✕
-                                    </button>
-                                    <span className="self-start rounded-md bg-destaque px-2 py-1 text-xs font-bold text-white">
-                                        {agendamento.data.split('-').reverse().join('/')} às {agendamento.horario}
-                                    </span>
-                                    <h3 className="mt-1 text-lg font-bold text-tertiary">{agendamento.nomeCliente}</h3>
-                                    <p className="text-sm text-gray-600">
-                                        <span className="font-medium">Serviço:</span> {agendamento.servico}
-                                    </p>
-                                </div>
-                            ))}
+                        <div className="flex flex-col gap-6">
+                            {datasComAgendamento.map((dataGrupo) => {
+                                const dataFormatada = dataGrupo.split('-').reverse().join('/');
+                                const isHoje = dataGrupo === dataHojeStr;
+                                
+                                return (
+                                    <div key={dataGrupo}>
+                                        <div className="mb-3 flex items-center gap-3 border-b border-gray-100 pb-2">
+                                            <h3 className="text-lg font-bold text-tertiary">{dataFormatada}</h3>
+                                            {isHoje && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">HOJE</span>}
+                                        </div>
+                                        
+                                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                            {agendamentosAgrupados[dataGrupo].map((agendamento, index) => (
+                                                <div key={`${dataGrupo}-${index}`} className="relative flex flex-col gap-2 rounded-2xl border border-gray-200 bg-primary p-4 transition hover:border-destaque/50">
+                                                    <button 
+                                                        onClick={() => removerAgendamento(agendamento)}
+                                                        className="absolute right-3 top-3 p-1 text-sm font-bold text-gray-400 hover:text-red-500"
+                                                        title="Remover Agendamento"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                    <span className="self-start rounded-md bg-destaque px-2 py-1 text-xs font-bold text-white">
+                                                        {agendamento.horario}
+                                                    </span>
+                                                    <h3 className="mt-1 text-lg font-bold text-tertiary">{agendamento.nomeCliente}</h3>
+                                                    <p className="text-sm text-gray-600">
+                                                        <span className="font-medium">Serviço:</span> {agendamento.servico}
+                                                    </p>
+                                                    <p className="text-sm font-medium text-green-600 mt-1">
+                                                        R$ {agendamento.valor}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
