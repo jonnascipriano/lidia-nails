@@ -223,7 +223,7 @@ export default function Agendamento() {
                             />
                         </label>
 
-                        <div>
+                        <div className="w-100">
                             <p className="mb-2 font-medium">Escolha um dia</p>
                             <div
                                 className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2"
