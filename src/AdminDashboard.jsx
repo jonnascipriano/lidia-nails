@@ -22,6 +22,13 @@ const converterParaMinutos = (horario) => {
     return horas * 60 + minutos;
 };
 
+const obterDataISO = (data) => {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    const dia = String(data.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+};
+
 export default function AdminDashboard({ onLogout }) {
     const [diasFechados, setDiasFechados] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
@@ -187,6 +194,24 @@ export default function AdminDashboard({ onLogout }) {
             });
         })
     );
+    const diasProximos = Array.from({ length: 14 }, (_, indice) => {
+        const data = new Date();
+        data.setHours(12, 0, 0, 0);
+        data.setDate(data.getDate() + indice);
+
+        return {
+            valor: obterDataISO(data),
+            rotulo: indice === 0
+                ? "Hoje"
+                : indice === 1
+                    ? "Amanhã"
+                    : data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+            data: data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+            quantidadeAgendamentos: agendamentos.filter(
+                (agendamento) => agendamento.data === obterDataISO(data)
+            ).length,
+        };
+    });
 
     return (
         <section className="min-h-screen bg-gradient-to-br from-[#fff8f5] via-[#fff] to-[#f8f1ff] p-5">
@@ -304,6 +329,35 @@ export default function AdminDashboard({ onLogout }) {
                                 Restaurar todos os padrões
                             </button>
                         )}
+                    </div>
+                    <div className="mt-4">
+                        <p className="mb-2 text-sm font-medium text-gray-600">Acesso rápido aos próximos dias</p>
+                        <div className="flex flex-wrap gap-2">
+                            {diasProximos.map((dia) => {
+                                const selecionado = dataCustom === dia.valor;
+                                return (
+                                    <button
+                                        key={dia.valor}
+                                        type="button"
+                                        onClick={() => setDataCustom(dia.valor)}
+                                        aria-pressed={selecionado}
+                                        className={`min-w-20 rounded-xl border px-3 py-2 text-center transition ${
+                                            selecionado
+                                                ? "border-destaque bg-destaque text-white"
+                                                : "border-gray-200 bg-white text-tertiary hover:border-destaque/50 hover:bg-primary"
+                                        }`}
+                                    >
+                                        <span className="block text-xs font-medium uppercase">{dia.rotulo}</span>
+                                        <span className="mt-0.5 block text-sm font-semibold">{dia.data}</span>
+                                        {dia.quantidadeAgendamentos > 0 && (
+                                            <span className={`mt-1 block text-xs ${selecionado ? "text-white/80" : "text-destaque"}`}>
+                                                {dia.quantidadeAgendamentos} {dia.quantidadeAgendamentos === 1 ? "agendamento" : "agendamentos"}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {dataCustom ? (

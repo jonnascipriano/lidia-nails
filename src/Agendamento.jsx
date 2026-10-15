@@ -19,6 +19,13 @@ const converterParaMinutos = (horaString) => {
     return horas * 60 + minutos;
 };
 
+const obterDataISO = (data) => {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    const dia = String(data.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+};
+
 const obterHorariosDoDia = (dataEscolhida, configSalao) => {
     if (!dataEscolhida) return [];
 
@@ -100,6 +107,23 @@ export default function Agendamento() {
         });
 
         return !temConflito;
+    });
+    const diasProximos = Array.from({ length: 14 }, (_, indice) => {
+        const data = new Date();
+        data.setHours(12, 0, 0, 0);
+        data.setDate(data.getDate() + indice);
+        const valor = obterDataISO(data);
+
+        return {
+            valor,
+            fechado: configSalao.diasFechados.includes(valor),
+            rotulo: indice === 0
+                ? "Hoje"
+                : indice === 1
+                    ? "Amanhã"
+                    : data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+            data: data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        };
     });
 
     const processarAgendamento = () => {
@@ -194,10 +218,46 @@ export default function Agendamento() {
                                     setDataEscolhida(event.target.value);
                                     setHorarioEscolhido("");
                                 }}
-                                min={new Date().toISOString().split("T")[0]}
+                                min={obterDataISO(new Date())}
                                 className="w-full rounded-xl border border-gray-300 p-3 focus:border-destaque focus:outline-none"
                             />
                         </label>
+
+                        <div>
+                            <p className="mb-2 font-medium">Escolha um dia</p>
+                            <div
+                                className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2"
+                                role="group"
+                                aria-label="Próximos dias disponíveis"
+                            >
+                                {diasProximos.map((dia) => {
+                                    const selecionado = dataEscolhida === dia.valor;
+                                    return (
+                                        <button
+                                            key={dia.valor}
+                                            type="button"
+                                            onClick={() => {
+                                                setDataEscolhida(dia.valor);
+                                                setHorarioEscolhido("");
+                                            }}
+                                            disabled={dia.fechado}
+                                            aria-pressed={selecionado}
+                                            className={`min-w-[76px] shrink-0 rounded-xl border px-3 py-2 text-center transition ${
+                                                dia.fechado
+                                                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                                                    : selecionado
+                                                        ? "border-destaque bg-destaque text-white"
+                                                        : "border-gray-200 bg-white text-tertiary hover:border-destaque/50 hover:bg-primary"
+                                            }`}
+                                        >
+                                            <span className="block text-xs font-medium uppercase">{dia.rotulo}</span>
+                                            <span className="mt-0.5 block text-sm font-semibold">{dia.data}</span>
+                                            {dia.fechado && <span className="mt-1 block text-xs">Fechado</span>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
 
                     <div>
