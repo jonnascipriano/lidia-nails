@@ -176,14 +176,14 @@ export default function Agendamento() {
     };
 
     return (
-        <section className="min-h-screen bg-primary p-5 text-tertiary">
-            <div className="mx-auto max-w-4xl rounded-3xl bg-white p-6 shadow-lg">
-                <div className="mb-6 flex items-start justify-between gap-4">
-                    <div>
+        <section className="min-h-screen w-full min-w-0 bg-primary p-3 text-tertiary sm:p-5">
+            <div className="mx-auto w-full min-w-0 max-w-4xl rounded-3xl bg-white p-4 shadow-lg sm:p-6">
+                <div className="mb-6 flex min-w-0 items-start justify-between gap-4">
+                    <div className="min-w-0">
                         <p className="text-sm uppercase tracking-[0.2em] text-destaque">Agendamento</p>
-                        <h1 className="mt-2 text-3xl font-bold text-tertiary">{servico.nome}</h1>
+                        <h1 className="mt-2 break-words text-3xl font-bold text-tertiary">{servico.nome}</h1>
                     </div>
-                    <Link to="/" className="text-sm font-medium text-destaque underline">
+                    <Link to="/" className="shrink-0 text-sm font-medium text-destaque underline">
                         Voltar
                     </Link>
                 </div>
@@ -196,8 +196,8 @@ export default function Agendamento() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-4">
+                <div className="grid min-w-0 gap-6 md:grid-cols-2">
+                    <div className="min-w-0 space-y-4">
                         <label className="block">
                             <span className="mb-2 block font-medium">Seu nome</span>
                             <input
@@ -223,7 +223,7 @@ export default function Agendamento() {
                             />
                         </label>
 
-                        <div className="w-100">
+                        <div className="w-full min-w-0">
                             <p className="mb-2 font-medium">Escolha um dia</p>
                             <div
                                 className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2"
@@ -260,7 +260,7 @@ export default function Agendamento() {
                         </div>
                     </div>
 
-                    <div>
+                    <div className="min-w-0">
                         <p className="mb-2 font-medium">Horários disponíveis</p>
 
                         {isDiaFechado ? (
@@ -296,8 +296,8 @@ export default function Agendamento() {
                     </div>
                 </div>
 
-                <div className="mt-8 flex items-center justify-between gap-4 border-t border-gray-200 pt-5">
-                    <div className="text-sm text-gray-600">
+                <div className="mt-8 flex flex-col gap-4 border-t border-gray-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 text-sm text-gray-600">
                         {horarioSelecionadoValido ? `Horário selecionado: ${horarioSelecionadoValido}` : "Nenhum horário selecionado"}
                     </div>
 
@@ -305,7 +305,7 @@ export default function Agendamento() {
                         type="button"
                         onClick={processarAgendamento}
                         disabled={!nome.trim() || !dataEscolhida || !horarioSelecionadoValido || isDiaFechado}
-                        className="rounded-xl bg-destaque px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+                        className="w-full rounded-xl bg-destaque px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-300 sm:w-auto"
                     >
                         Agendar no WhatsApp
                     </button>
