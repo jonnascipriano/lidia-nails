@@ -47,6 +47,8 @@ export default function Agendamento() {
     const [nome, setNome] = useState("");
     const [dataEscolhida, setDataEscolhida] = useState("");
     const [horarioEscolhido, setHorarioEscolhido] = useState("");
+    const [mostrarModal, setMostrarModal] = useState(false);
+
     const [configSalao] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
         if (!configSalva) {
@@ -108,6 +110,7 @@ export default function Agendamento() {
 
         return !temConflito;
     });
+
     const diasProximos = Array.from({ length: 14 }, (_, indice) => {
         const data = new Date();
         data.setHours(12, 0, 0, 0);
@@ -126,22 +129,9 @@ export default function Agendamento() {
         };
     });
 
-    const processarAgendamento = () => {
-        if (!nome.trim()) {
-            alert("Digite seu nome antes de continuar.");
-            return;
-        }
+    // === FUNÇÕES DE AÇÃO ===
 
-        if (!dataEscolhida) {
-            alert("Selecione uma data.");
-            return;
-        }
-
-        if (!horarioSelecionadoValido) {
-            alert("Selecione um horário disponível.");
-            return;
-        }
-
+    const salvarDadosLocais = () => {
         const novoAgendamento = {
             data: dataEscolhida,
             horario: horarioSelecionadoValido,
@@ -150,33 +140,54 @@ export default function Agendamento() {
             servico: servico.nome,
             valor: servico.valor,
         };
-
         const todosAgendamentos = [...agendamentosJaFeitos, novoAgendamento];
         localStorage.setItem("agendamentos", JSON.stringify(todosAgendamentos));
         setAgendamentosJaFeitos(todosAgendamentos);
+    };
 
-        const numeroLidia = "5588992137098";
-        const dataFormatada = dataEscolhida.split("-").reverse().join("/");
-
-        const mensagem =
-            `Olá, Lídia! Gostaria de agendar um horário. 💅\n\n` +
-            `*Serviço:* ${servico.nome}\n` +
-            `*Nome:* ${nome}\n` +
-            `*Data:* ${dataFormatada}\n` +
-            `*Horário:* ${horarioSelecionadoValido}\n` +
-            `*Valor:* R$ ${servico.valor}\n\n` +
-            `Podemos confirmar?`;
-
-        const urlWhatsApp = `https://wa.me/${numeroLidia}?text=${encodeURIComponent(mensagem)}`;
-        window.open(urlWhatsApp, "_blank");
-
+    const limparETerminar = () => {
         setHorarioEscolhido("");
         setNome("");
         setDataEscolhida("");
+        setMostrarModal(false);
+    };
+
+    const confirmarAgendamentoPrincipal = () => {
+        salvarDadosLocais(); // Salva IMEDIATAMENTE na agenda
+        setMostrarModal(true); // Abre a tela avisando que deu certo
+    };
+
+    const agendarViaWhatsApp = () => {
+        const numeroLidia = "5588992137098";
+        const dataFormatada = dataEscolhida.split("-").reverse().join("/");
+        const mensagem = `Olá, Lídia! Acabei de agendar um horário pelo sistema. 💅\n\n*Serviço:* ${servico.nome}\n*Nome:* ${nome}\n*Data:* ${dataFormatada}\n*Horário:* ${horarioSelecionadoValido}\n*Valor:* R$ ${servico.valor}`;
+        
+        window.open(`https://wa.me/${numeroLidia}?text=${encodeURIComponent(mensagem)}`, "_blank");
+        limparETerminar();
+    };
+
+    const agendarViaCalendario = () => {
+        const dataFormatada = dataEscolhida.replace(/-/g, "");
+        const [horaInicio, minInicio] = horarioSelecionadoValido.split(":");
+        const dataInicioStr = `${dataFormatada}T${horaInicio}${minInicio}00`;
+
+        const inicioMinutos = converterParaMinutos(horarioSelecionadoValido);
+        const fimMinutos = inicioMinutos + servico.tempoEstimado;
+        const fimHora = String(Math.floor(fimMinutos / 60)).padStart(2, "0");
+        const fimMin = String(fimMinutos % 60).padStart(2, "0");
+        const dataFimStr = `${dataFormatada}T${fimHora}${fimMin}00`;
+
+        const titulo = encodeURIComponent(`Agendamento: ${servico.nome}`);
+        const detalhes = encodeURIComponent(`Cliente: ${nome}\nValor do serviço: R$ ${servico.valor}`);
+        
+        const urlGoogleCalendar = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${dataInicioStr}/${dataFimStr}&details=${detalhes}`;
+        
+        window.open(urlGoogleCalendar, "_blank");
+        limparETerminar();
     };
 
     return (
-        <section className="min-h-screen w-full min-w-0 bg-primary p-3 text-tertiary sm:p-5">
+        <section className="min-h-screen w-full min-w-0 bg-primary p-3 text-tertiary sm:p-5 relative">
             <div className="mx-auto w-full min-w-0 max-w-4xl rounded-3xl bg-white p-4 shadow-lg sm:p-6">
                 <div className="mb-6 flex min-w-0 items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -303,14 +314,50 @@ export default function Agendamento() {
 
                     <button
                         type="button"
-                        onClick={processarAgendamento}
+                        onClick={confirmarAgendamentoPrincipal}
                         disabled={!nome.trim() || !dataEscolhida || !horarioSelecionadoValido || isDiaFechado}
-                        className="w-full rounded-xl bg-destaque px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-300 sm:w-auto"
+                        className="w-full rounded-xl bg-destaque px-8 py-3 font-bold text-white transition hover:scale-105 disabled:transform-none disabled:cursor-not-allowed disabled:bg-gray-300 sm:w-auto"
                     >
-                        Agendar no WhatsApp
+                        Agendar
                     </button>
                 </div>
             </div>
+
+            {/* ====== TELA DO MODAL ====== */}
+            {mostrarModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-center">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                            <span className="text-3xl text-green-500">✓</span>
+                        </div>
+                        <h3 className="mb-2 text-xl font-bold text-tertiary">Agendamento Confirmado!</h3>
+                        <p className="mb-6 text-sm text-gray-500">Seu horário já está garantido. Gostaria de salvar na sua agenda ou avisar a Lídia?</p>
+                        
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={agendarViaWhatsApp}
+                                className="flex w-full items-center justify-center rounded-xl bg-green-500 p-4 font-bold text-white transition hover:bg-green-600 active:scale-95"
+                            >
+                                Avisar no WhatsApp
+                            </button>
+
+                            <button 
+                                onClick={agendarViaCalendario}
+                                className="flex w-full items-center justify-center rounded-xl bg-blue-500 p-4 font-bold text-white transition hover:bg-blue-600 active:scale-95"
+                            >
+                                Salvar no Google Agenda
+                            </button>
+
+                            <button 
+                                onClick={limparETerminar}
+                                className="mt-2 w-full rounded-xl p-3 text-sm font-medium text-gray-500 transition hover:bg-gray-100"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }
