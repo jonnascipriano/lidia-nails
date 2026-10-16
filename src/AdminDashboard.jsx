@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import ButtonSwitch from "./ButtonSwitch";
+import { calcularHorarioTermino } from "./horarios";
 
 const gerarHorariosPadrao = () => {
     const horarios = [];
@@ -68,6 +69,9 @@ export default function AdminDashboard({ onLogout }) {
     const [novoHorario, setNovoHorario] = useState("");
     const [dataCustom, setDataCustom] = useState("");
     const [horarioExtra, setHorarioExtra] = useState("");
+    const [agendamentoEmEdicao, setAgendamentoEmEdicao] = useState(null);
+    const [valorEditado, setValorEditado] = useState("");
+    const [observacaoEdicao, setObservacaoEdicao] = useState("");
 
     const [agendamentos, setAgendamentos] = useState(() => {
         const agendamentosSalvos = localStorage.getItem("agendamentos");
@@ -207,14 +211,59 @@ export default function AdminDashboard({ onLogout }) {
     const removerAgendamento = (agendamentoParaRemover) => {
         const confirmacao = window.confirm("Tem certeza que deseja remover este agendamento? Ele voltará a ficar disponível para outras clientes.");
         if (confirmacao) {
-            const novaLista = agendamentos.filter((ag) => 
-                !(ag.data === agendamentoParaRemover.data && 
-                  ag.horario === agendamentoParaRemover.horario && 
-                  ag.nomeCliente === agendamentoParaRemover.nomeCliente)
-            );
+            const novaLista = agendamentos.filter((ag) => ag !== agendamentoParaRemover);
             setAgendamentos(novaLista);
             localStorage.setItem("agendamentos", JSON.stringify(novaLista));
         }
+    };
+
+    const iniciarEdicaoAgendamento = (agendamento) => {
+        setAgendamentoEmEdicao(agendamento);
+        setValorEditado(String(agendamento.valor ?? 0));
+        setObservacaoEdicao("");
+    };
+
+    const cancelarEdicaoAgendamento = () => {
+        setAgendamentoEmEdicao(null);
+        setValorEditado("");
+        setObservacaoEdicao("");
+    };
+
+    const salvarEdicaoAgendamento = (agendamento) => {
+        const novoValor = Number(valorEditado);
+        if (!valorEditado.trim() || !Number.isFinite(novoValor) || novoValor < 0) {
+            alert("Informe um valor válido para o serviço.");
+            return;
+        }
+        if (!observacaoEdicao.trim()) {
+            alert("Informe o motivo da alteração do valor.");
+            return;
+        }
+
+        const indiceAgendamento = agendamentos.indexOf(agendamento);
+        if (indiceAgendamento === -1) {
+            alert("Não foi possível localizar este agendamento. Atualize a página e tente novamente.");
+            return;
+        }
+
+        const historicoEdicoes = [
+            ...(Array.isArray(agendamento.historicoEdicoes) ? agendamento.historicoEdicoes : []),
+            {
+                valorAnterior: Number(agendamento.valor) || 0,
+                valorNovo: novoValor,
+                observacao: observacaoEdicao.trim(),
+                editadoEm: new Date().toISOString(),
+            },
+        ];
+        const novaLista = agendamentos.map((item, indice) =>
+            indice === indiceAgendamento
+                ? { ...item, valor: novoValor, historicoEdicoes }
+                : item
+        );
+
+        localStorage.setItem("agendamentos", JSON.stringify(novaLista));
+        setAgendamentos(novaLista);
+        cancelarEdicaoAgendamento();
     };
 
     const horariosDoDiaSelecionado = dataCustom
@@ -515,7 +564,12 @@ export default function AdminDashboard({ onLogout }) {
                                         </div>
                                         
                                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                            {agendamentosAgrupados[dataGrupo].map((agendamento, index) => (
+                                            {agendamentosAgrupados[dataGrupo].map((agendamento, index) => {
+                                                const estaEditando = agendamentoEmEdicao === agendamento;
+                                                const historicoEdicoes = Array.isArray(agendamento.historicoEdicoes)
+                                                    ? agendamento.historicoEdicoes
+                                                    : [];
+                                                return (
                                                 <div key={`${dataGrupo}-${index}`} className="relative flex flex-col gap-2 rounded-2xl border border-gray-200 bg-primary p-4 transition hover:border-destaque/50">
                                                     <button 
                                                         onClick={() => removerAgendamento(agendamento)}
@@ -525,8 +579,11 @@ export default function AdminDashboard({ onLogout }) {
                                                         ✕
                                                     </button>
                                                     <span className="self-start rounded-md bg-destaque px-2 py-1 text-xs font-bold text-white">
-                                                        {agendamento.horario}
+                                                        Início: {agendamento.horario}
                                                     </span>
+                                                    <p className="text-xs font-medium text-gray-500">
+                                                        Término previsto: {calcularHorarioTermino(agendamento.horario, Number(agendamento.duracao) || 15) || "—"}
+                                                    </p>
                                                     <h3 className="mt-1 text-lg font-bold text-tertiary">{agendamento.nomeCliente}</h3>
                                                     <p className="text-sm text-gray-600">
                                                         <span className="font-medium">Serviço:</span> {agendamento.servico}
@@ -534,8 +591,65 @@ export default function AdminDashboard({ onLogout }) {
                                                     <p className="text-sm font-medium text-green-600 mt-1">
                                                         R$ {agendamento.valor}
                                                     </p>
+                                                    {historicoEdicoes.length > 0 && (
+                                                        <p className="text-xs text-gray-600">
+                                                            <span className="font-semibold">Motivo da última edição:</span>{" "}
+                                                            {historicoEdicoes[historicoEdicoes.length - 1].observacao}
+                                                        </p>
+                                                    )}
+                                                    {estaEditando ? (
+                                                        <div className="mt-2 space-y-2 border-t border-gray-200 pt-3">
+                                                            <label className="block text-sm font-medium text-gray-700">
+                                                                Novo valor (R$)
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    value={valorEditado}
+                                                                    onChange={(event) => setValorEditado(event.target.value)}
+                                                                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white p-2"
+                                                                />
+                                                            </label>
+                                                            <label className="block text-sm font-medium text-gray-700">
+                                                                Motivo da alteração
+                                                                <textarea
+                                                                    value={observacaoEdicao}
+                                                                    onChange={(event) => setObservacaoEdicao(event.target.value)}
+                                                                    rows={2}
+                                                                    required
+                                                                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white p-2"
+                                                                    placeholder="Descreva o adicional solicitado"
+                                                                />
+                                                            </label>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => salvarEdicaoAgendamento(agendamento)}
+                                                                    className="rounded-lg bg-destaque px-3 py-2 text-sm font-semibold text-white"
+                                                                >
+                                                                    Salvar
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={cancelarEdicaoAgendamento}
+                                                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600"
+                                                                >
+                                                                    Cancelar
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => iniciarEdicaoAgendamento(agendamento)}
+                                                            className="mt-2 self-start rounded-lg border border-destaque px-3 py-1.5 text-sm font-semibold text-destaque transition hover:bg-destaque hover:text-white"
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 );

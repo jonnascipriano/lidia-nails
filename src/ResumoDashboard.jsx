@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { calcularHorarioTermino } from "./horarios";
 
 export default function ResumoDashboard() {
     const [resumoHoje, setResumoHoje] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
@@ -230,12 +231,15 @@ export default function ResumoDashboard() {
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <span className="rounded-md bg-destaque px-2.5 py-1 text-xs font-bold text-white">
-                                                            {ag.horario}
+                                                            Início: {ag.horario}
                                                         </span>
                                                         <span className="text-xs font-semibold text-gray-500">
                                                             {ag.duracao ? `${ag.duracao} min` : "15 min"}
                                                         </span>
                                                     </div>
+                                                    <p className="text-xs font-medium text-gray-500">
+                                                        Término previsto: {calcularHorarioTermino(ag.horario, Number(ag.duracao) || 15) || "—"}
+                                                    </p>
 
                                                     <div>
                                                         <h4 className="text-base font-bold text-tertiary">{ag.nomeCliente}</h4>

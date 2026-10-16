@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { calcularHorarioTermino } from "./horarios";
 
 const gerarHorariosPadrao = () => {
     const horarios = [];
@@ -94,6 +95,9 @@ export default function Agendamento() {
     const isDiaFechado = Array.isArray(configSalao.diasFechados) && configSalao.diasFechados.includes(dataEscolhida);
     const horariosDoDiaBase = obterHorariosDoDia(dataEscolhida, configSalao);
     const horarioSelecionadoValido = horarioEscolhido && horariosDoDiaBase.includes(horarioEscolhido) ? horarioEscolhido : "";
+    const horarioTerminoPrevisto = horarioSelecionadoValido
+        ? calcularHorarioTermino(horarioSelecionadoValido, servico.tempoEstimado)
+        : null;
 
     const horariosLivres = horariosDoDiaBase.filter((horaCandidata) => {
         if (!dataEscolhida) return false;
@@ -160,7 +164,7 @@ export default function Agendamento() {
     const agendarViaWhatsApp = () => {
         const numeroLidia = "5588992137098";
         const dataFormatada = dataEscolhida.split("-").reverse().join("/");
-        const mensagem = `Olá, Lídia! Acabei de agendar um horário pelo sistema. 💅\n\n*Serviço:* ${servico.nome}\n*Nome:* ${nome}\n*Data:* ${dataFormatada}\n*Horário:* ${horarioSelecionadoValido}\n*Valor:* R$ ${servico.valor}`;
+        const mensagem = `Olá, Lídia! Acabei de agendar um horário pelo sistema. 💅\n\n*Serviço:* ${servico.nome}\n*Nome:* ${nome}\n*Data:* ${dataFormatada}\n*Horário:* ${horarioSelecionadoValido}\n*Término previsto:* ${horarioTerminoPrevisto}\n*Valor:* R$ ${servico.valor}`;
         
         window.open(`https://wa.me/${numeroLidia}?text=${encodeURIComponent(mensagem)}`, "_blank");
         limparETerminar();
@@ -309,7 +313,9 @@ export default function Agendamento() {
 
                 <div className="mt-8 flex flex-col gap-4 border-t border-gray-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 text-sm text-gray-600">
-                        {horarioSelecionadoValido ? `Horário selecionado: ${horarioSelecionadoValido}` : "Nenhum horário selecionado"}
+                        {horarioSelecionadoValido
+                            ? `Horário selecionado: ${horarioSelecionadoValido} · Término previsto: ${horarioTerminoPrevisto}`
+                            : "Nenhum horário selecionado"}
                     </div>
 
                     <button
