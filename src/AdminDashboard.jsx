@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import ButtonSwitch from "./ButtonSwitch";
 import { calcularHorarioTermino } from "./horarios";
+import servicos from "./servicos";
 
 const gerarHorariosPadrao = () => {
     const horarios = [];
@@ -28,6 +29,13 @@ const obterDataISO = (data) => {
     const mes = String(data.getMonth() + 1).padStart(2, "0");
     const dia = String(data.getDate()).padStart(2, "0");
     return `${ano}-${mes}-${dia}`;
+};
+
+const obterDataOntemISO = () => {
+    const ontem = new Date();
+    ontem.setHours(12, 0, 0, 0);
+    ontem.setDate(ontem.getDate() - 1);
+    return obterDataISO(ontem);
 };
 
 export default function AdminDashboard({ onLogout }) {
@@ -72,6 +80,14 @@ export default function AdminDashboard({ onLogout }) {
     const [agendamentoEmEdicao, setAgendamentoEmEdicao] = useState(null);
     const [valorEditado, setValorEditado] = useState("");
     const [observacaoEdicao, setObservacaoEdicao] = useState("");
+    const [nomeClienteManual, setNomeClienteManual] = useState("");
+    const [dataManual, setDataManual] = useState(obterDataOntemISO);
+    const [horarioManual, setHorarioManual] = useState("");
+    const [servicoManual, setServicoManual] = useState(servicos[0].nome);
+    const [valorManual, setValorManual] = useState(String(servicos[0].valor));
+    const [duracaoManual, setDuracaoManual] = useState(String(servicos[0].tempoEstimado));
+    const [mensagemCadastroManual, setMensagemCadastroManual] = useState("");
+    const dataMaximaManual = obterDataOntemISO();
 
     const [agendamentos, setAgendamentos] = useState(() => {
         const agendamentosSalvos = localStorage.getItem("agendamentos");
@@ -264,6 +280,49 @@ export default function AdminDashboard({ onLogout }) {
         localStorage.setItem("agendamentos", JSON.stringify(novaLista));
         setAgendamentos(novaLista);
         cancelarEdicaoAgendamento();
+    };
+
+    const adicionarAgendamentoManual = (event) => {
+        event.preventDefault();
+        const valor = Number(valorManual);
+        const duracao = Number(duracaoManual);
+
+        if (!nomeClienteManual.trim() || !dataManual || dataManual > dataMaximaManual || !horarioManual) {
+            alert("Informe o nome, uma data anterior a hoje e o horário do atendimento.");
+            return;
+        }
+        if (!Number.isFinite(valor) || valor < 0 || !Number.isInteger(duracao) || duracao <= 0) {
+            alert("Informe um valor válido e uma duração maior que zero.");
+            return;
+        }
+
+        const novoAgendamento = {
+            data: dataManual,
+            horario: horarioManual,
+            duracao,
+            nomeCliente: nomeClienteManual.trim(),
+            servico: servicoManual,
+            valor,
+            origem: "manual",
+        };
+        const novaLista = [...agendamentos, novoAgendamento].sort((a, b) => {
+            if (a.data === b.data) return a.horario.localeCompare(b.horario);
+            return a.data.localeCompare(b.data);
+        });
+
+        localStorage.setItem("agendamentos", JSON.stringify(novaLista));
+        setAgendamentos(novaLista);
+        setNomeClienteManual("");
+        setMensagemCadastroManual("Atendimento registrado e incluído na agenda e nos resumos financeiros.");
+    };
+
+    const selecionarServicoManual = (nomeServico) => {
+        const servicoSelecionado = servicos.find((servico) => servico.nome === nomeServico);
+        if (!servicoSelecionado) return;
+
+        setServicoManual(servicoSelecionado.nome);
+        setValorManual(String(servicoSelecionado.valor));
+        setDuracaoManual(String(servicoSelecionado.tempoEstimado));
     };
 
     const horariosDoDiaSelecionado = dataCustom
@@ -540,6 +599,94 @@ export default function AdminDashboard({ onLogout }) {
                     <button onClick={salvarConfiguracoes} className="rounded-xl bg-destaque px-6 py-3 font-bold text-white shadow-md transition hover:scale-[1.02]">
                         Salvar Alterações
                     </button>
+                </div>
+
+                <div className="mt-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
+                    <div className="mb-5">
+                        <h2 className="text-xl font-bold text-tertiary">Adicionar atendimento anterior</h2>
+                        <p className="mt-1 text-sm text-gray-500">
+                            Registre um atendimento que aconteceu antes de hoje. Ele será incluído na agenda e nos cálculos financeiros.
+                        </p>
+                    </div>
+                    <form onSubmit={adicionarAgendamentoManual} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Nome da cliente
+                            <input
+                                type="text"
+                                value={nomeClienteManual}
+                                onChange={(event) => setNomeClienteManual(event.target.value)}
+                                required
+                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                placeholder="Nome da cliente"
+                            />
+                        </label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Data do atendimento
+                            <input
+                                type="date"
+                                value={dataManual}
+                                onChange={(event) => setDataManual(event.target.value)}
+                                max={dataMaximaManual}
+                                required
+                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                            />
+                        </label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Horário de início
+                            <input
+                                type="time"
+                                value={horarioManual}
+                                onChange={(event) => setHorarioManual(event.target.value)}
+                                required
+                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                            />
+                        </label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Serviço
+                            <select
+                                value={servicoManual}
+                                onChange={(event) => selecionarServicoManual(event.target.value)}
+                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                            >
+                                {servicos.map((servico) => (
+                                    <option key={servico.nome} value={servico.nome}>{servico.nome}</option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Valor cobrado (R$)
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={valorManual}
+                                onChange={(event) => setValorManual(event.target.value)}
+                                required
+                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                            />
+                        </label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Duração (minutos)
+                            <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                value={duracaoManual}
+                                onChange={(event) => setDuracaoManual(event.target.value)}
+                                required
+                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                            />
+                        </label>
+                        <div className="flex flex-col justify-end gap-3 md:col-span-2 xl:col-span-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p role="status" className="text-sm text-green-700">{mensagemCadastroManual}</p>
+                            <button
+                                type="submit"
+                                className="rounded-xl bg-destaque px-6 py-3 font-semibold text-white transition hover:scale-[1.02]"
+                            >
+                                Registrar atendimento
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
                 {/* ===== NOVA SESSÃO: AGENDAMENTOS AGRUPADOS POR DIA ===== */}
