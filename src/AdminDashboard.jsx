@@ -38,6 +38,11 @@ const obterDataOntemISO = () => {
     return obterDataISO(ontem);
 };
 
+const compararAgendamentos = (a, b) => {
+    if (a.data === b.data) return a.horario.localeCompare(b.horario);
+    return a.data.localeCompare(b.data);
+};
+
 export default function AdminDashboard({ onLogout }) {
     const [diasFechados, setDiasFechados] = useState(() => {
         const configSalva = localStorage.getItem("configSalao");
@@ -78,6 +83,7 @@ export default function AdminDashboard({ onLogout }) {
     const [dataCustom, setDataCustom] = useState("");
     const [horarioExtra, setHorarioExtra] = useState("");
     const [agendamentoEmEdicao, setAgendamentoEmEdicao] = useState(null);
+    const [anterioresExpandidos, setAnterioresExpandidos] = useState(false);
     const [valorEditado, setValorEditado] = useState("");
     const [observacaoEdicao, setObservacaoEdicao] = useState("");
     const [nomeClienteManual, setNomeClienteManual] = useState("");
@@ -94,10 +100,7 @@ export default function AdminDashboard({ onLogout }) {
         if (!agendamentosSalvos) return [];
         try {
             const lista = JSON.parse(agendamentosSalvos);
-            return [...lista].sort((a, b) => {
-                if (a.data === b.data) return a.horario.localeCompare(b.horario);
-                return a.data.localeCompare(b.data);
-            });
+            return [...lista].sort(compararAgendamentos);
         } catch {
             return [];
         }
@@ -142,8 +145,18 @@ export default function AdminDashboard({ onLogout }) {
         grupos[agendamento.data].push(agendamento);
         return grupos;
     }, {});
-    // Pega as datas agrupadas e ordena da mais próxima para a mais distante
-    const datasComAgendamento = Object.keys(agendamentosAgrupados).sort();
+    const datasComAgendamento = Object.keys(agendamentosAgrupados);
+    const datasProximasComAgendamento = datasComAgendamento
+        .filter((data) => data >= dataHojeStr)
+        .sort();
+    const datasAnterioresComAgendamento = datasComAgendamento
+        .filter((data) => data < dataHojeStr)
+        .sort()
+        .reverse();
+    const gruposDeDatas = [
+        { titulo: "Próximos agendamentos", datas: datasProximasComAgendamento },
+        { titulo: "Agendamentos anteriores", datas: datasAnterioresComAgendamento },
+    ].filter((grupo) => grupo.datas.length > 0);
 
     // === FUNÇÕES DE AÇÃO COM MELHORIAS ===
     const salvarConfiguracoes = () => {
@@ -305,10 +318,7 @@ export default function AdminDashboard({ onLogout }) {
             valor,
             origem: "manual",
         };
-        const novaLista = [...agendamentos, novoAgendamento].sort((a, b) => {
-            if (a.data === b.data) return a.horario.localeCompare(b.horario);
-            return a.data.localeCompare(b.data);
-        });
+        const novaLista = [...agendamentos, novoAgendamento].sort(compararAgendamentos);
 
         localStorage.setItem("agendamentos", JSON.stringify(novaLista));
         setAgendamentos(novaLista);
@@ -698,20 +708,65 @@ export default function AdminDashboard({ onLogout }) {
                             Ainda não há clientes agendadas.
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-6">
-                            {datasComAgendamento.map((dataGrupo) => {
-                                const dataFormatada = dataGrupo.split('-').reverse().join('/');
+                        <div className="flex flex-col gap-8">
+                            {gruposDeDatas.map((grupo) => {
+                                const isGrupoAnterior = grupo.titulo === "Agendamentos anteriores";
+                                const quantidadeAgendamentos = grupo.datas.reduce(
+                                    (total, data) => total + agendamentosAgrupados[data].length,
+                                    0
+                                );
+
+                                return (
+                                <section key={grupo.titulo} className="space-y-4">
+                                    {isGrupoAnterior ? (
+                                        <button
+                                            type="button"
+                                            aria-expanded={anterioresExpandidos}
+                                            aria-controls="lista-agendamentos-anteriores"
+                                            onClick={() => setAnterioresExpandidos((expandido) => !expandido)}
+                                            className="flex w-full items-center justify-between border-b border-gray-200 pb-2 text-left text-sm font-bold uppercase tracking-wide text-gray-500 transition hover:text-destaque"
+                                        >
+                                            <span>{grupo.titulo} ({quantidadeAgendamentos})</span>
+                                            <span className="text-destaque">
+                                                {anterioresExpandidos ? "Ver menos −" : "Ver mais +"}
+                                            </span>
+                                        </button>
+                                    ) : (
+                                        <h3 className="border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                                            {grupo.titulo}
+                                        </h3>
+                                    )}
+                                    {(!isGrupoAnterior || anterioresExpandidos) && (
+                                    <div
+                                        id={isGrupoAnterior ? "lista-agendamentos-anteriores" : undefined}
+                                        className="space-y-4"
+                                    >
+                                    {grupo.datas.map((dataGrupo) => {
+                                const dataLocal = new Date(`${dataGrupo}T12:00:00`);
+                                const dataFormatada = dataLocal.toLocaleDateString("pt-BR", {
+                                    weekday: "long",
+                                    day: "2-digit",
+                                    month: "long",
+                                    year: "numeric",
+                                });
                                 const isHoje = dataGrupo === dataHojeStr;
+                                const amanha = new Date(hojeData);
+                                amanha.setDate(amanha.getDate() + 1);
+                                const isAmanha = dataGrupo === obterDataISO(amanha);
                                 
                                 return (
                                     <div key={dataGrupo}>
                                         <div className="mb-3 flex items-center gap-3 border-b border-gray-100 pb-2">
-                                            <h3 className="text-lg font-bold text-tertiary">{dataFormatada}</h3>
+                                            <h4 className="text-lg font-bold capitalize text-tertiary">{dataFormatada}</h4>
                                             {isHoje && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">HOJE</span>}
+                                            {isAmanha && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">AMANHÃ</span>}
+                                            <span className="text-sm text-gray-500">
+                                                {agendamentosAgrupados[dataGrupo].length} {agendamentosAgrupados[dataGrupo].length === 1 ? "cliente" : "clientes"}
+                                            </span>
                                         </div>
                                         
                                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                            {agendamentosAgrupados[dataGrupo].map((agendamento, index) => {
+                                            {[...agendamentosAgrupados[dataGrupo]].sort(compararAgendamentos).map((agendamento, index) => {
                                                 const estaEditando = agendamentoEmEdicao === agendamento;
                                                 const historicoEdicoes = Array.isArray(agendamento.historicoEdicoes)
                                                     ? agendamento.historicoEdicoes
@@ -799,6 +854,11 @@ export default function AdminDashboard({ onLogout }) {
                                             })}
                                         </div>
                                     </div>
+                                );
+                                    })}
+                                    </div>
+                                    )}
+                                </section>
                                 );
                             })}
                         </div>
