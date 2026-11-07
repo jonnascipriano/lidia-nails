@@ -1,0 +1,1 @@
+var e=(e,t)=>{if(typeof e!=`string`)return null;let[n,r]=e.split(`:`).map(Number),i=Number(t);if(![n,r,i].every(Number.isFinite))return null;let a=n*60+r+i;return`${String(Math.floor(a/60)).padStart(2,`0`)}:${String(a%60).padStart(2,`0`)}`};export{e as t};
