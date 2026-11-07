@@ -41,7 +41,7 @@ export default function AdminArea() {
         let cancelado = false;
         Promise.resolve()
             .then(() => import("./agendamentosFirebase"))
-            .then(({ migrarAgendamentosLocais }) => migrarAgendamentosLocais())
+            .then(({ migrarDadosLocais }) => migrarDadosLocais())
             .then(() => {
                 if (!cancelado) {
                     setErroMigracao("");

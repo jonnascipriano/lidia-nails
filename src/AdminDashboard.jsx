@@ -7,7 +7,9 @@ import {
     atualizarAgendamento,
     criarAgendamento,
     excluirAgendamento,
+    observarConfiguracaoAgenda,
     observarAgendamentos,
+    salvarConfiguracaoAgenda as persistirConfiguracaoAgenda,
 } from "./agendamentosFirebase";
 
 const gerarHorariosPadrao = () => {
@@ -43,39 +45,12 @@ const compararAgendamentos = (a, b) => {
 };
 
 export default function AdminDashboard({ onLogout }) {
-    const [diasFechados, setDiasFechados] = useState(() => {
-        const configSalva = localStorage.getItem("configSalao");
-        if (!configSalva) return [];
-        try {
-            const config = JSON.parse(configSalva);
-            return config.diasFechados || [];
-        } catch {
-            return [];
-        }
-    });
-
-    const [horariosDisponiveis, setHorariosDisponiveis] = useState(() => {
-        const configSalva = localStorage.getItem("configSalao");
-        const horariosPadrao = gerarHorariosPadrao();
-        if (!configSalva) return horariosPadrao;
-        try {
-            const config = JSON.parse(configSalva);
-            return config.horariosDisponiveis?.length ? config.horariosDisponiveis : horariosPadrao;
-        } catch {
-            return horariosPadrao;
-        }
-    });
-
-    const [diasCustomizados, setDiasCustomizados] = useState(() => {
-        const configSalva = localStorage.getItem("configSalao");
-        if (!configSalva) return {};
-        try {
-            const config = JSON.parse(configSalva);
-            return config.diasCustomizados || {};
-        } catch {
-            return {};
-        }
-    });
+    const [diasFechados, setDiasFechados] = useState([]);
+    const [horariosDisponiveis, setHorariosDisponiveis] = useState(gerarHorariosPadrao);
+    const [diasCustomizados, setDiasCustomizados] = useState({});
+    const [carregandoConfiguracao, setCarregandoConfiguracao] = useState(true);
+    const [erroConfiguracao, setErroConfiguracao] = useState("");
+    const [salvandoConfiguracao, setSalvandoConfiguracao] = useState(false);
 
     const [novoDia, setNovoDia] = useState("");
     const [novoHorario, setNovoHorario] = useState("");
@@ -106,6 +81,28 @@ export default function AdminDashboard({ onLogout }) {
         (erro) => {
             setErroAgendamentos(`Não foi possível carregar os agendamentos: ${erro.message}`);
             setCarregandoAgendamentos(false);
+        }
+    ), []);
+
+    useEffect(() => observarConfiguracaoAgenda(
+        (config) => {
+            setDiasFechados(Array.isArray(config?.diasFechados) ? config.diasFechados : []);
+            setHorariosDisponiveis(
+                Array.isArray(config?.horariosDisponiveis) && config.horariosDisponiveis.length
+                    ? config.horariosDisponiveis
+                    : gerarHorariosPadrao()
+            );
+            setDiasCustomizados(
+                config?.diasCustomizados && typeof config.diasCustomizados === "object" && !Array.isArray(config.diasCustomizados)
+                    ? config.diasCustomizados
+                    : {}
+            );
+            setCarregandoConfiguracao(false);
+            setErroConfiguracao("");
+        },
+        (erro) => {
+            setErroConfiguracao(`Não foi possível carregar as configurações da agenda: ${erro.message}`);
+            setCarregandoConfiguracao(false);
         }
     ), []);
 
@@ -162,10 +159,17 @@ export default function AdminDashboard({ onLogout }) {
     ].filter((grupo) => grupo.datas.length > 0);
 
     // === FUNÇÕES DE AÇÃO COM MELHORIAS ===
-    const salvarConfiguracoes = () => {
+    const salvarConfiguracoes = async () => {
         const config = { diasFechados, horariosDisponiveis, diasCustomizados };
-        localStorage.setItem("configSalao", JSON.stringify(config));
-        alert("Configurações salvas com sucesso!");
+        setSalvandoConfiguracao(true);
+        try {
+            await persistirConfiguracaoAgenda(config);
+            alert("Configurações salvas com sucesso!");
+        } catch (erro) {
+            alert(`Não foi possível salvar as configurações no Firebase: ${erro.message}`);
+        } finally {
+            setSalvandoConfiguracao(false);
+        }
     };
 
     const adicionarDia = () => {
@@ -476,6 +480,11 @@ export default function AdminDashboard({ onLogout }) {
                     </summary>
 
                     <div className="mt-5 border-t border-gray-100 pt-5">
+                    {erroConfiguracao && (
+                        <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {erroConfiguracao}
+                        </div>
+                    )}
                     <div className="grid gap-6 xl:grid-cols-2">
                     <div className="rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="mb-4 flex items-center justify-between">
@@ -663,8 +672,12 @@ export default function AdminDashboard({ onLogout }) {
 
                 <div className="mt-8 rounded-2xl bg-indigo-50 p-4 border border-indigo-100 flex items-center justify-between">
                     <p className="text-sm text-indigo-800 font-medium">Lembre-se de salvar para aplicar as alterações de horários e folgas na agenda das clientes.</p>
-                    <button onClick={salvarConfiguracoes} className="rounded-xl bg-destaque px-6 py-3 font-bold text-white shadow-md transition hover:scale-[1.02]">
-                        Salvar Alterações
+                    <button
+                        onClick={salvarConfiguracoes}
+                        disabled={carregandoConfiguracao || Boolean(erroConfiguracao) || salvandoConfiguracao}
+                        className="rounded-xl bg-destaque px-6 py-3 font-bold text-white shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {carregandoConfiguracao ? "Carregando..." : salvandoConfiguracao ? "Salvando..." : "Salvar Alterações"}
                     </button>
                 </div>
                     </div>

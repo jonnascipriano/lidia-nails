@@ -3,28 +3,21 @@ import {
     collection,
     deleteDoc,
     doc,
+    getDoc,
     onSnapshot,
     serverTimestamp,
+    setDoc,
     updateDoc,
     writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebaseFirestore";
 
 const colecaoAgendamentos = collection(db, "agendamentos");
+const configuracaoAgendaRef = doc(db, "configuracoes", "agenda");
 
 const compararAgendamentos = (a, b) => {
     if (a.data === b.data) return a.horario.localeCompare(b.horario);
     return a.data.localeCompare(b.data);
-};
-
-const criarIdLegado = (agendamento, indice) => {
-    const texto = `${JSON.stringify(agendamento)}-${indice}`;
-    let hash = 2166136261;
-    for (let caractere = 0; caractere < texto.length; caractere++) {
-        hash ^= texto.charCodeAt(caractere);
-        hash = Math.imul(hash, 16777619);
-    }
-    return `legado-${(hash >>> 0).toString(16)}`;
 };
 
 export const observarAgendamentos = (aoAtualizar, aoFalhar) => onSnapshot(
@@ -48,32 +41,70 @@ export const atualizarAgendamento = (id, alteracoes) =>
 
 export const excluirAgendamento = (id) => deleteDoc(doc(db, "agendamentos", id));
 
-export const migrarAgendamentosLocais = async () => {
-    const chaveMigracao = "agendamentosMigradosFirebase";
-    if (localStorage.getItem(chaveMigracao) === "true") return;
+export const observarConfiguracaoAgenda = (aoAtualizar, aoFalhar) => onSnapshot(
+    configuracaoAgendaRef,
+    (snapshot) => aoAtualizar(snapshot.exists() ? snapshot.data() : null),
+    aoFalhar
+);
 
+export const salvarConfiguracaoAgenda = (configuracao) =>
+    setDoc(configuracaoAgendaRef, configuracao);
+
+const criarIdLegado = (texto) => {
+    let hash = 2166136261;
+    for (let caractere = 0; caractere < texto.length; caractere++) {
+        hash ^= texto.charCodeAt(caractere);
+        hash = Math.imul(hash, 16777619);
+    }
+    return `legado-${(hash >>> 0).toString(16)}`;
+};
+
+export const migrarDadosLocais = async () => {
     const agendamentosLocais = localStorage.getItem("agendamentos");
     let listaLegada = [];
     if (agendamentosLocais) {
-        listaLegada = JSON.parse(agendamentosLocais);
-        if (!Array.isArray(listaLegada)) {
+        try {
+            listaLegada = JSON.parse(agendamentosLocais);
+        } catch {
+            throw new Error("Os agendamentos salvos neste navegador estão em um formato inválido.");
+        }
+        if (!Array.isArray(listaLegada) || listaLegada.some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
             throw new Error("Os agendamentos salvos neste navegador estão em um formato inválido.");
         }
     }
 
-    const ocorrencias = new Map();
     for (let inicio = 0; inicio < listaLegada.length; inicio += 450) {
         const lote = writeBatch(db);
-        listaLegada.slice(inicio, inicio + 450).forEach((agendamento) => {
+        listaLegada.slice(inicio, inicio + 450).forEach((agendamento, indiceLote) => {
             const textoAgendamento = JSON.stringify(agendamento);
-            const ocorrencia = ocorrencias.get(textoAgendamento) || 0;
-            ocorrencias.set(textoAgendamento, ocorrencia + 1);
-            const id = criarIdLegado(agendamento, ocorrencia);
+            const id = criarIdLegado(`${textoAgendamento}-${inicio + indiceLote}`);
             lote.set(doc(db, "agendamentos", id), { ...agendamento, origem: agendamento.origem || "migrado" });
         });
         await lote.commit();
     }
 
-    localStorage.setItem(chaveMigracao, "true");
+    const configuracaoLocal = localStorage.getItem("configSalao");
+    if (configuracaoLocal) {
+        let configuracao;
+        try {
+            configuracao = JSON.parse(configuracaoLocal);
+        } catch {
+            throw new Error("As configurações salvas neste navegador estão em um formato inválido.");
+        }
+
+        if (!configuracao || typeof configuracao !== "object" || Array.isArray(configuracao)) {
+            throw new Error("As configurações salvas neste navegador estão em um formato inválido.");
+        }
+
+        const configuracaoExistente = await getDoc(configuracaoAgendaRef);
+        if (!configuracaoExistente.exists()) {
+            await setDoc(configuracaoAgendaRef, configuracao);
+        } else if (JSON.stringify(configuracaoExistente.data()) !== JSON.stringify(configuracao)) {
+            const idLegado = criarIdLegado(JSON.stringify(configuracao));
+            await setDoc(doc(db, "configuracoes", idLegado), configuracao);
+        }
+    }
+
     localStorage.removeItem("agendamentos");
+    localStorage.removeItem("configSalao");
 };

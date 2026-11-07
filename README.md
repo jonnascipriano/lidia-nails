@@ -11,7 +11,7 @@ Aplicação de catálogo e painel administrativo para gerenciar serviços, agend
 5. Copie `.env.example` para `.env.local` e preencha as credenciais do app Web em **Project settings → Your apps**.
 6. Configure as mesmas variáveis `VITE_FIREBASE_*` no ambiente usado para gerar a versão de produção.
 
-O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos são sincronizados em tempo real com a coleção `agendamentos` do Firestore. Na primeira entrada autenticada em cada navegador, os dados antigos de `localStorage` são importados e removidos após a confirmação da importação.
+O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos são sincronizados em tempo real com a coleção `agendamentos` do Firestore; as configurações de agenda são sincronizadas pelo documento `configuracoes/agenda`. Na primeira entrada autenticada em cada navegador, dados antigos de agendamentos e configurações salvos em `localStorage` são importados e removidos após a confirmação da gravação no Firestore.
 
 O agendamento online para clientes está temporariamente pausado; a página orienta o contato pelo WhatsApp.
 
