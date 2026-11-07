@@ -1,16 +1,30 @@
-# React + Vite
+# Lídia Nails
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação de catálogo e painel administrativo para gerenciar serviços, agenda e faturamento.
 
-Currently, two official plugins are available:
+## Configuração do Firebase
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. No Firebase Console do projeto, habilite **Authentication → E-mail/senha**.
+2. Crie a conta da dona em **Authentication → Users → Add user**. Não há cadastro público de contas.
+3. Crie o banco em **Firestore Database**.
+4. Publique as regras de [`firestore.rules`](./firestore.rules) no Firestore (aba **Rules**). As leituras e gravações exigem autenticação.
+5. Copie `.env.example` para `.env.local` e preencha as credenciais do app Web em **Project settings → Your apps**.
+6. Configure as mesmas variáveis `VITE_FIREBASE_*` no ambiente usado para gerar a versão de produção.
 
-## React Compiler
+O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos são sincronizados em tempo real com a coleção `agendamentos` do Firestore. Na primeira entrada autenticada em cada navegador, os dados antigos de `localStorage` são importados e removidos após a confirmação da importação.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+O agendamento online para clientes está temporariamente pausado; a página orienta o contato pelo WhatsApp.
 
-## Expanding the ESLint configuration
+## Desenvolvimento
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```sh
+npm install
+npm run dev
+```
+
+Para validar as alterações:
+
+```sh
+npm run lint
+npm run build
+```

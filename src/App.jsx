@@ -1,59 +1,54 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import { useState } from "react";
 import Header from "./Header";
-import AdminDashboard from "./AdminDashboard";
-import AdminLogin from "./AdminLogin";
 import ClienteView from "./ClienteView";
-import Agendamento from "./Agendamento";
-import ResumoDashboard from "./ResumoDashboard";
+
+const AdminArea = lazy(() => import("./AdminArea"));
+const Agendamento = lazy(() => import("./Agendamento"));
 
 function App() {
-    // Cria um useState para verificar se a autenticação é verdadeira ou falsa
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-
     return (
-            <Routes>
-                <Route
-                    path="/"
-                    element={
-                        <main className="bg-primary min-h-screen w-full pb-10">
-                            <Header />
-                            <ClienteView />
-                        </main>
-                    }
-                />
+        <Routes>
+            <Route
+                path="/"
+                element={
+                    <main className="min-h-screen w-full bg-primary pb-10">
+                        <Header />
+                        <ClienteView />
+                    </main>
+                }
+            />
 
-                <Route
-                    path="/agendar"
-                    element={
-                        <main className="bg-primary min-h-screen w-full pb-10">
+            <Route
+                path="/agendar"
+                element={
+                    <Suspense fallback={<div className="p-8 text-center text-tertiary">Carregando...</div>}>
+                        <main className="min-h-screen w-full bg-primary pb-10">
                             <Header />
                             <Agendamento />
                         </main>
-                    }
-                />
+                    </Suspense>
+                }
+            />
 
-                <Route
-                    path="/admin"
-                    element={
-                        isAuthenticated ? (
-                            <AdminDashboard onLogout={() => setIsAuthenticated(false)} />
-                        ) : (
-                            <AdminLogin onSuccess={() => setIsAuthenticated(true)} />
-                        )
-                    }
-                />
+            <Route
+                path="/admin"
+                element={
+                    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-tertiary">Carregando...</div>}>
+                        <AdminArea />
+                    </Suspense>
+                }
+            />
 
-                <Route
-                    path="/dashboard"
-                    element={
-                        <main>
-                            <Header/>
-                            <ResumoDashboard/>
-                        </main>
-                    }
-                />
-            </Routes>
+            <Route
+                path="/dashboard"
+                element={
+                    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-tertiary">Carregando...</div>}>
+                        <AdminArea />
+                    </Suspense>
+                }
+            />
+        </Routes>
     );
 }
 

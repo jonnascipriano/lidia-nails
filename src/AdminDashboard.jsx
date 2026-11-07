@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ButtonSwitch from "./ButtonSwitch";
 import { calcularHorarioTermino } from "./horarios";
 import servicos from "./servicos";
+import {
+    atualizarAgendamento,
+    criarAgendamento,
+    excluirAgendamento,
+    observarAgendamentos,
+} from "./agendamentosFirebase";
 
 const gerarHorariosPadrao = () => {
     const horarios = [];
@@ -29,13 +35,6 @@ const obterDataISO = (data) => {
     const mes = String(data.getMonth() + 1).padStart(2, "0");
     const dia = String(data.getDate()).padStart(2, "0");
     return `${ano}-${mes}-${dia}`;
-};
-
-const obterDataOntemISO = () => {
-    const ontem = new Date();
-    ontem.setHours(12, 0, 0, 0);
-    ontem.setDate(ontem.getDate() - 1);
-    return obterDataISO(ontem);
 };
 
 const compararAgendamentos = (a, b) => {
@@ -87,24 +86,28 @@ export default function AdminDashboard({ onLogout }) {
     const [valorEditado, setValorEditado] = useState("");
     const [observacaoEdicao, setObservacaoEdicao] = useState("");
     const [nomeClienteManual, setNomeClienteManual] = useState("");
-    const [dataManual, setDataManual] = useState(obterDataOntemISO);
+    const [dataManual, setDataManual] = useState(() => obterDataISO(new Date()));
     const [horarioManual, setHorarioManual] = useState("");
     const [servicoManual, setServicoManual] = useState(servicos[0].nome);
     const [valorManual, setValorManual] = useState(String(servicos[0].valor));
     const [duracaoManual, setDuracaoManual] = useState(String(servicos[0].tempoEstimado));
     const [mensagemCadastroManual, setMensagemCadastroManual] = useState("");
-    const dataMaximaManual = obterDataOntemISO();
+    const [agendamentos, setAgendamentos] = useState([]);
+    const [carregandoAgendamentos, setCarregandoAgendamentos] = useState(true);
+    const [erroAgendamentos, setErroAgendamentos] = useState("");
+    const [salvandoAgendamento, setSalvandoAgendamento] = useState(false);
 
-    const [agendamentos, setAgendamentos] = useState(() => {
-        const agendamentosSalvos = localStorage.getItem("agendamentos");
-        if (!agendamentosSalvos) return [];
-        try {
-            const lista = JSON.parse(agendamentosSalvos);
-            return [...lista].sort(compararAgendamentos);
-        } catch {
-            return [];
+    useEffect(() => observarAgendamentos(
+        (lista) => {
+            setAgendamentos(lista);
+            setCarregandoAgendamentos(false);
+            setErroAgendamentos("");
+        },
+        (erro) => {
+            setErroAgendamentos(`Não foi possível carregar os agendamentos: ${erro.message}`);
+            setCarregandoAgendamentos(false);
         }
-    });
+    ), []);
 
     // === LÓGICA DE RESUMO FINANCEIRO ===
     const hojeData = new Date();
@@ -237,12 +240,14 @@ export default function AdminDashboard({ onLogout }) {
     };
 
     // Nova lógica de remover para evitar bugs (compara os dados em vez de usar o INDEX)
-    const removerAgendamento = (agendamentoParaRemover) => {
+    const removerAgendamento = async (agendamentoParaRemover) => {
         const confirmacao = window.confirm("Tem certeza que deseja remover este agendamento? Ele voltará a ficar disponível para outras clientes.");
         if (confirmacao) {
-            const novaLista = agendamentos.filter((ag) => ag !== agendamentoParaRemover);
-            setAgendamentos(novaLista);
-            localStorage.setItem("agendamentos", JSON.stringify(novaLista));
+            try {
+                await excluirAgendamento(agendamentoParaRemover.id);
+            } catch (erro) {
+                alert(`Não foi possível remover o agendamento: ${erro.message}`);
+            }
         }
     };
 
@@ -258,7 +263,7 @@ export default function AdminDashboard({ onLogout }) {
         setObservacaoEdicao("");
     };
 
-    const salvarEdicaoAgendamento = (agendamento) => {
+    const salvarEdicaoAgendamento = async (agendamento) => {
         const novoValor = Number(valorEditado);
         if (!valorEditado.trim() || !Number.isFinite(novoValor) || novoValor < 0) {
             alert("Informe um valor válido para o serviço.");
@@ -266,12 +271,6 @@ export default function AdminDashboard({ onLogout }) {
         }
         if (!observacaoEdicao.trim()) {
             alert("Informe o motivo da alteração do valor.");
-            return;
-        }
-
-        const indiceAgendamento = agendamentos.indexOf(agendamento);
-        if (indiceAgendamento === -1) {
-            alert("Não foi possível localizar este agendamento. Atualize a página e tente novamente.");
             return;
         }
 
@@ -284,29 +283,52 @@ export default function AdminDashboard({ onLogout }) {
                 editadoEm: new Date().toISOString(),
             },
         ];
-        const novaLista = agendamentos.map((item, indice) =>
-            indice === indiceAgendamento
-                ? { ...item, valor: novoValor, historicoEdicoes }
-                : item
-        );
-
-        localStorage.setItem("agendamentos", JSON.stringify(novaLista));
-        setAgendamentos(novaLista);
-        cancelarEdicaoAgendamento();
+        try {
+            await atualizarAgendamento(agendamento.id, { valor: novoValor, historicoEdicoes });
+            cancelarEdicaoAgendamento();
+        } catch (erro) {
+            alert(`Não foi possível salvar a alteração: ${erro.message}`);
+        }
     };
 
-    const adicionarAgendamentoManual = (event) => {
+    const adicionarAgendamentoManual = async (event) => {
         event.preventDefault();
+        if (salvandoAgendamento) return;
         const valor = Number(valorManual);
         const duracao = Number(duracaoManual);
+        const horariosDoDiaManual = Object.prototype.hasOwnProperty.call(diasCustomizados, dataManual)
+            ? diasCustomizados[dataManual]
+            : horariosDisponiveis;
+        const inicioNovoAgendamento = horarioManual ? converterParaMinutos(horarioManual) : -1;
+        const fimNovoAgendamento = inicioNovoAgendamento + duracao;
+        const temConflito = agendamentos.some((agendamento) => {
+            if (agendamento.data !== dataManual) return false;
+            const inicioAgendado = converterParaMinutos(agendamento.horario);
+            const fimAgendado = inicioAgendado + (Number(agendamento.duracao) || 15);
+            return inicioNovoAgendamento < fimAgendado && fimNovoAgendamento > inicioAgendado;
+        });
 
-        if (!nomeClienteManual.trim() || !dataManual || dataManual > dataMaximaManual || !horarioManual) {
-            alert("Informe o nome, uma data anterior a hoje e o horário do atendimento.");
+        if (!nomeClienteManual.trim() || !dataManual || !horarioManual) {
+            alert("Informe o nome, a data e o horário do atendimento.");
             return;
         }
         if (!Number.isFinite(valor) || valor < 0 || !Number.isInteger(duracao) || duracao <= 0) {
             alert("Informe um valor válido e uma duração maior que zero.");
             return;
+        }
+        if (dataManual >= dataHojeStr) {
+            if (diasFechados.includes(dataManual)) {
+                alert("O salão está fechado nesta data.");
+                return;
+            }
+            if (!horariosDoDiaManual.includes(horarioManual)) {
+                alert("Selecione um horário disponível para esta data.");
+                return;
+            }
+            if (temConflito) {
+                alert("Este horário conflita com outro atendimento. Escolha um horário disponível.");
+                return;
+            }
         }
 
         const novoAgendamento = {
@@ -318,12 +340,21 @@ export default function AdminDashboard({ onLogout }) {
             valor,
             origem: "manual",
         };
-        const novaLista = [...agendamentos, novoAgendamento].sort(compararAgendamentos);
-
-        localStorage.setItem("agendamentos", JSON.stringify(novaLista));
-        setAgendamentos(novaLista);
-        setNomeClienteManual("");
-        setMensagemCadastroManual("Atendimento registrado e incluído na agenda e nos resumos financeiros.");
+        setSalvandoAgendamento(true);
+        try {
+            await criarAgendamento(novoAgendamento);
+            setNomeClienteManual("");
+            setHorarioManual("");
+            setMensagemCadastroManual(
+                dataManual >= dataHojeStr
+                    ? "Agendamento realizado e incluído na agenda."
+                    : "Atendimento registrado e incluído na agenda e nos resumos financeiros."
+            );
+        } catch (erro) {
+            alert(`Não foi possível salvar o agendamento no Firebase: ${erro.message}`);
+        } finally {
+            setSalvandoAgendamento(false);
+        }
     };
 
     const selecionarServicoManual = (nomeServico) => {
@@ -333,7 +364,27 @@ export default function AdminDashboard({ onLogout }) {
         setServicoManual(servicoSelecionado.nome);
         setValorManual(String(servicoSelecionado.valor));
         setDuracaoManual(String(servicoSelecionado.tempoEstimado));
+        setHorarioManual("");
     };
+
+    const horariosBaseManual = dataManual
+        ? Object.prototype.hasOwnProperty.call(diasCustomizados, dataManual)
+            ? diasCustomizados[dataManual]
+            : horariosDisponiveis
+        : [];
+    const horariosDisponiveisManuais = dataManual >= dataHojeStr && !diasFechados.includes(dataManual)
+        ? horariosBaseManual.filter((horario) => {
+            const inicioNovoAgendamento = converterParaMinutos(horario);
+            const fimNovoAgendamento = inicioNovoAgendamento + (Number(duracaoManual) || 15);
+            return !agendamentos.some((agendamento) => {
+                if (agendamento.data !== dataManual) return false;
+                const inicioAgendado = converterParaMinutos(agendamento.horario);
+                const fimAgendado = inicioAgendado + (Number(agendamento.duracao) || 15);
+                return inicioNovoAgendamento < fimAgendado && fimNovoAgendamento > inicioAgendado;
+            });
+        })
+        : [];
+    const agendamentoManualFuturo = dataManual >= dataHojeStr;
 
     const horariosDoDiaSelecionado = dataCustom
         ? Object.prototype.hasOwnProperty.call(diasCustomizados, dataCustom)
@@ -404,22 +455,28 @@ export default function AdminDashboard({ onLogout }) {
                     </div>
                 </div>
 
-                <div className="mb-8 grid gap-4 md:grid-cols-3">
-                    <div className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm">
-                        <p className="text-sm text-gray-500">Dias fechados</p>
-                        <p className="mt-2 text-3xl font-bold text-tertiary">{diasFechados.length}</p>
-                    </div>
-                    <div className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm">
-                        <p className="text-sm text-gray-500">Horários padrão</p>
-                        <p className="mt-2 text-3xl font-bold text-tertiary">{horariosDisponiveis.length}</p>
-                    </div>
-                    <div className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm">
-                        <p className="text-sm text-gray-500">Dias com ajuste</p>
-                        <p className="mt-2 text-3xl font-bold text-tertiary">{Object.keys(diasCustomizados).length}</p>
-                    </div>
-                </div>
+                <details className="group mb-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
+                    <summary className="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-lg font-bold text-tertiary">Configurações da agenda</h2>
+                            <p className="mt-1 text-sm text-gray-500">Dias fechados, horários e ajustes por data</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+                            <span className="rounded-full bg-pink-50 px-3 py-1.5 text-destaque">
+                                {diasFechados.length} {diasFechados.length === 1 ? "dia fechado" : "dias fechados"}
+                            </span>
+                            <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-indigo-700">
+                                {horariosDisponiveis.length} horários padrão
+                            </span>
+                            <span className="rounded-full bg-gray-100 px-3 py-1.5 text-gray-600">
+                                {Object.keys(diasCustomizados).length} dias ajustados
+                            </span>
+                            <span className="ml-1 text-sm text-destaque transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+                        </div>
+                    </summary>
 
-                <div className="grid gap-6 xl:grid-cols-2">
+                    <div className="mt-5 border-t border-gray-100 pt-5">
+                    <div className="grid gap-6 xl:grid-cols-2">
                     <div className="rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-tertiary">Dias Fechados</h2>
@@ -610,12 +667,14 @@ export default function AdminDashboard({ onLogout }) {
                         Salvar Alterações
                     </button>
                 </div>
+                    </div>
+                </details>
 
                 <div className="mt-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                     <div className="mb-5">
-                        <h2 className="text-xl font-bold text-tertiary">Adicionar atendimento anterior</h2>
+                        <h2 className="text-xl font-bold text-tertiary">Agendar cliente</h2>
                         <p className="mt-1 text-sm text-gray-500">
-                            Registre um atendimento que aconteceu antes de hoje. Ele será incluído na agenda e nos cálculos financeiros.
+                            Agende um novo atendimento ou registre um atendimento anterior. Os horários futuros seguem a disponibilidade da agenda.
                         </p>
                     </div>
                     <form onSubmit={adicionarAgendamentoManual} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -635,18 +694,11 @@ export default function AdminDashboard({ onLogout }) {
                             <input
                                 type="date"
                                 value={dataManual}
-                                onChange={(event) => setDataManual(event.target.value)}
-                                max={dataMaximaManual}
-                                required
-                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
-                            />
-                        </label>
-                        <label className="block text-sm font-medium text-gray-700">
-                            Horário de início
-                            <input
-                                type="time"
-                                value={horarioManual}
-                                onChange={(event) => setHorarioManual(event.target.value)}
+                                onChange={(event) => {
+                                    setDataManual(event.target.value);
+                                    setHorarioManual("");
+                                    setMensagemCadastroManual("");
+                                }}
                                 required
                                 className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
                             />
@@ -663,6 +715,93 @@ export default function AdminDashboard({ onLogout }) {
                                 ))}
                             </select>
                         </label>
+                        <div className="md:col-span-2 xl:col-span-3">
+                            {agendamentoManualFuturo ? (
+                                <>
+                                    <div className="mb-4">
+                                        <p className="mb-2 text-sm font-medium text-gray-700">Escolha um dia</p>
+                                        <div
+                                            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2"
+                                            role="group"
+                                            aria-label="Próximos dias para agendamento"
+                                        >
+                                            {diasProximos.map((dia) => {
+                                                const selecionado = dataManual === dia.valor;
+                                                const fechado = diasFechados.includes(dia.valor);
+                                                return (
+                                                    <button
+                                                        key={dia.valor}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setDataManual(dia.valor);
+                                                            setHorarioManual("");
+                                                            setMensagemCadastroManual("");
+                                                        }}
+                                                        disabled={fechado}
+                                                        aria-pressed={selecionado}
+                                                        className={`min-w-[76px] shrink-0 rounded-xl border px-3 py-2 text-center transition ${
+                                                            fechado
+                                                                ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                                                                : selecionado
+                                                                    ? "border-destaque bg-destaque text-white"
+                                                                    : "border-gray-200 bg-white text-tertiary hover:border-destaque/50 hover:bg-primary"
+                                                        }`}
+                                                    >
+                                                        <span className="block text-xs font-medium uppercase">{dia.rotulo}</span>
+                                                        <span className="mt-0.5 block text-sm font-semibold">{dia.data}</span>
+                                                        {fechado && <span className="mt-1 block text-xs">Fechado</span>}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    <p className="mb-2 text-sm font-medium text-gray-700">Horários disponíveis</p>
+                                    {diasFechados.includes(dataManual) ? (
+                                        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                                            O salão está fechado nesta data.
+                                        </div>
+                                    ) : horariosDisponiveisManuais.length === 0 ? (
+                                        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700">
+                                            Nenhum horário disponível para essa data.
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-wrap gap-2" role="group" aria-label="Horários disponíveis">
+                                            {horariosDisponiveisManuais.map((horario) => (
+                                                <button
+                                                    key={horario}
+                                                    type="button"
+                                                    onClick={() => setHorarioManual(horario)}
+                                                    aria-pressed={horarioManual === horario}
+                                                    className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
+                                                        horarioManual === horario
+                                                            ? "border-destaque bg-destaque text-white"
+                                                            : "border-destaque/30 bg-primary text-tertiary hover:bg-secondary"
+                                                    }`}
+                                                >
+                                                    {horario}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <p className="mt-3 text-sm text-gray-600" aria-live="polite">
+                                        {horarioManual
+                                            ? `Horário selecionado: ${horarioManual} · Término previsto: ${calcularHorarioTermino(horarioManual, Number(duracaoManual))}`
+                                            : "Selecione um horário para continuar."}
+                                    </p>
+                                </>
+                            ) : (
+                                <label className="block max-w-sm text-sm font-medium text-gray-700">
+                                    Horário do atendimento anterior
+                                    <input
+                                        type="time"
+                                        value={horarioManual}
+                                        onChange={(event) => setHorarioManual(event.target.value)}
+                                        required
+                                        className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                    />
+                                </label>
+                            )}
+                        </div>
                         <label className="block text-sm font-medium text-gray-700">
                             Valor cobrado (R$)
                             <input
@@ -691,9 +830,12 @@ export default function AdminDashboard({ onLogout }) {
                             <p role="status" className="text-sm text-green-700">{mensagemCadastroManual}</p>
                             <button
                                 type="submit"
+                                disabled={salvandoAgendamento}
                                 className="rounded-xl bg-destaque px-6 py-3 font-semibold text-white transition hover:scale-[1.02]"
                             >
-                                Registrar atendimento
+                                {salvandoAgendamento
+                                    ? "Salvando..."
+                                    : agendamentoManualFuturo ? "Agendar cliente" : "Registrar atendimento"}
                             </button>
                         </div>
                     </form>
@@ -703,7 +845,15 @@ export default function AdminDashboard({ onLogout }) {
                 <div className="mt-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                     <h2 className="mb-6 text-xl font-bold text-tertiary">Agenda de Clientes</h2>
 
-                    {datasComAgendamento.length === 0 ? (
+                    {erroAgendamentos ? (
+                        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {erroAgendamentos}
+                        </div>
+                    ) : carregandoAgendamentos ? (
+                        <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
+                            Carregando agendamentos...
+                        </div>
+                    ) : datasComAgendamento.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
                             Ainda não há clientes agendadas.
                         </div>

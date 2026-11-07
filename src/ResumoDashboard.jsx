@@ -1,20 +1,29 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { calcularHorarioTermino } from "./horarios";
+import { observarAgendamentos } from "./agendamentosFirebase";
 
 export default function ResumoDashboard() {
     const [resumoHoje, setResumoHoje] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
     const [resumoSemana, setResumoSemana] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
     const [resumoMes, setResumoMes] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
     const [agendamentosPorDia, setAgendamentosPorDia] = useState({});
+    const [erroAgendamentos, setErroAgendamentos] = useState("");
+    const [agendamentos, setAgendamentos] = useState([]);
+
+    useEffect(() => {
+        return observarAgendamentos(
+            (lista) => {
+                setAgendamentos(lista);
+                setErroAgendamentos("");
+            },
+            (erro) => setErroAgendamentos(`Não foi possível carregar os agendamentos: ${erro.message}`)
+        );
+    }, []);
 
     useEffect(() => {
         const atualizarResumo = () => {
-            const agendamentosSalvos = localStorage.getItem("agendamentos");
-            const agendamentos = agendamentosSalvos ? JSON.parse(agendamentosSalvos) : [];
-
-            // Ordena agendamentos por data e horário
-            agendamentos.sort((a, b) => {
+            const agendamentosOrdenados = [...agendamentos].sort((a, b) => {
                 if (a.data === b.data) return a.horario.localeCompare(b.horario);
                 return a.data.localeCompare(b.data);
             });
@@ -52,7 +61,7 @@ export default function ResumoDashboard() {
 
             const grupos = {};
 
-            agendamentos.forEach((ag) => {
+            agendamentosOrdenados.forEach((ag) => {
                 // Agrupamento de agendamentos por data
                 if (!grupos[ag.data]) {
                     grupos[ag.data] = [];
@@ -114,7 +123,7 @@ export default function ResumoDashboard() {
         atualizarResumo();
         const intervalo = setInterval(atualizarResumo, 60 * 1000);
         return () => clearInterval(intervalo);
-    }, []);
+    }, [agendamentos]);
 
     const datasOrdenadas = Object.keys(agendamentosPorDia).sort();
     const hojeISO = new Date().toISOString().split("T")[0];
@@ -201,7 +210,11 @@ export default function ResumoDashboard() {
                 <div className="rounded-[26px] border border-gray-200 bg-white p-6 shadow-sm">
                     <h2 className="mb-6 text-xl font-bold text-tertiary">Histórico e Próximos Agendamentos</h2>
 
-                    {datasOrdenadas.length === 0 ? (
+                    {erroAgendamentos ? (
+                        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {erroAgendamentos}
+                        </div>
+                    ) : datasOrdenadas.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
                             Nenhum agendamento registrado no sistema.
                         </div>
