@@ -677,19 +677,19 @@ export default function AdminDashboard({ onLogout }) {
                             Agende um novo atendimento ou registre um atendimento anterior. Os horários futuros seguem a disponibilidade da agenda.
                         </p>
                     </div>
-                    <form onSubmit={adicionarAgendamentoManual} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <label className="block text-sm font-medium text-gray-700">
+                    <form onSubmit={adicionarAgendamentoManual} className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <label className="block min-w-0 text-sm font-medium text-gray-700">
                             Nome da cliente
                             <input
                                 type="text"
                                 value={nomeClienteManual}
                                 onChange={(event) => setNomeClienteManual(event.target.value)}
                                 required
-                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
                                 placeholder="Nome da cliente"
                             />
                         </label>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block min-w-0 text-sm font-medium text-gray-700">
                             Data do atendimento
                             <input
                                 type="date"
@@ -700,28 +700,28 @@ export default function AdminDashboard({ onLogout }) {
                                     setMensagemCadastroManual("");
                                 }}
                                 required
-                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
                             />
                         </label>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block min-w-0 text-sm font-medium text-gray-700">
                             Serviço
                             <select
                                 value={servicoManual}
                                 onChange={(event) => selecionarServicoManual(event.target.value)}
-                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
                             >
                                 {servicos.map((servico) => (
                                     <option key={servico.nome} value={servico.nome}>{servico.nome}</option>
                                 ))}
                             </select>
                         </label>
-                        <div className="md:col-span-2 xl:col-span-3">
+                        <div className="min-w-0 sm:col-span-2 xl:col-span-3">
                             {agendamentoManualFuturo ? (
                                 <>
                                     <div className="mb-4">
                                         <p className="mb-2 text-sm font-medium text-gray-700">Escolha um dia</p>
                                         <div
-                                            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2"
+                                            className="flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain pb-2"
                                             role="group"
                                             aria-label="Próximos dias para agendamento"
                                         >
@@ -765,14 +765,14 @@ export default function AdminDashboard({ onLogout }) {
                                             Nenhum horário disponível para essa data.
                                         </div>
                                     ) : (
-                                        <div className="flex flex-wrap gap-2" role="group" aria-label="Horários disponíveis">
+                                        <div className="grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] gap-2" role="group" aria-label="Horários disponíveis">
                                             {horariosDisponiveisManuais.map((horario) => (
                                                 <button
                                                     key={horario}
                                                     type="button"
                                                     onClick={() => setHorarioManual(horario)}
                                                     aria-pressed={horarioManual === horario}
-                                                    className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
+                                                    className={`w-full rounded-xl border px-2 py-2 text-sm font-medium transition ${
                                                         horarioManual === horario
                                                             ? "border-destaque bg-destaque text-white"
                                                             : "border-destaque/30 bg-primary text-tertiary hover:bg-secondary"
@@ -790,19 +790,19 @@ export default function AdminDashboard({ onLogout }) {
                                     </p>
                                 </>
                             ) : (
-                                <label className="block max-w-sm text-sm font-medium text-gray-700">
+                                <label className="block min-w-0 max-w-sm text-sm font-medium text-gray-700">
                                     Horário do atendimento anterior
                                     <input
                                         type="time"
                                         value={horarioManual}
                                         onChange={(event) => setHorarioManual(event.target.value)}
                                         required
-                                        className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                        className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
                                     />
                                 </label>
                             )}
                         </div>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block min-w-0 text-sm font-medium text-gray-700">
                             Valor cobrado (R$)
                             <input
                                 type="number"
@@ -811,10 +811,10 @@ export default function AdminDashboard({ onLogout }) {
                                 value={valorManual}
                                 onChange={(event) => setValorManual(event.target.value)}
                                 required
-                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
                             />
                         </label>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block min-w-0 text-sm font-medium text-gray-700">
                             Duração (minutos)
                             <input
                                 type="number"
@@ -823,15 +823,15 @@ export default function AdminDashboard({ onLogout }) {
                                 value={duracaoManual}
                                 onChange={(event) => setDuracaoManual(event.target.value)}
                                 required
-                                className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
                             />
                         </label>
-                        <div className="flex flex-col justify-end gap-3 md:col-span-2 xl:col-span-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p role="status" className="text-sm text-green-700">{mensagemCadastroManual}</p>
+                        <div className="flex min-w-0 flex-col justify-end gap-3 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between xl:col-span-3">
+                            <p role="status" className="min-w-0 break-words text-sm text-green-700">{mensagemCadastroManual}</p>
                             <button
                                 type="submit"
                                 disabled={salvandoAgendamento}
-                                className="rounded-xl bg-destaque px-6 py-3 font-semibold text-white transition hover:scale-[1.02]"
+                                className="w-full shrink-0 rounded-xl bg-destaque px-6 py-3 font-semibold text-white transition hover:scale-[1.02] sm:w-auto"
                             >
                                 {salvandoAgendamento
                                     ? "Salvando..."
