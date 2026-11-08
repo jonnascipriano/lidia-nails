@@ -1,0 +1,1 @@
+import{n as e}from"./index-BxEVikQc.js";var t=e();function n({children:e,...n}){return(0,t.jsx)(`button`,{...n,className:`bg-button font-medium text-sm px-2 rounded-2xl cursor-pointer`,children:e})}export{n as t};
