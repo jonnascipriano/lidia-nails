@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "./firebaseAuth";
+import { auth, persistirSessao } from "./firebaseAuth";
 import InstallAppButton from "./InstallAppButton";
 
 const mensagensErro = {
@@ -27,6 +27,7 @@ export default function AdminLogin() {
         setMensagem("");
         setCarregando(true);
         try {
+            await persistirSessao();
             await signInWithEmailAndPassword(auth, email.trim(), senha);
         } catch (erroLogin) {
             setErro(descreverErro(erroLogin));

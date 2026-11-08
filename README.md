@@ -1,7 +1,7 @@
 # Lídia Nails
 
-Aplicação de catálogo e painel administrativo para gerenciar serviços, agenda e faturamento.
-Em dispositivos móveis, instale o painel pela opção **Instalar app** na tela de acesso ou no painel; o app abre diretamente em `/admin`.
+Aplicação de painel administrativo para gerenciar serviços, agenda e faturamento. A tela pública de agendamento foi desativada; use **Ir para login** para acessar o painel.
+Em dispositivos móveis, instale o app pela tela de acesso ou no painel. Ele abre diretamente na rota administrativa, que solicita login se necessário, e mantém a sessão após fechar e reabrir o app.
 
 ## Configuração do Firebase
 
@@ -13,8 +13,6 @@ Em dispositivos móveis, instale o painel pela opção **Instalar app** na tela 
 6. Configure as mesmas variáveis `VITE_FIREBASE_*` no ambiente usado para gerar a versão de produção.
 
 O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos são sincronizados em tempo real com a coleção `agendamentos` do Firestore; as configurações de agenda são sincronizadas pelo documento `configuracoes/agenda`. Na primeira entrada autenticada em cada navegador, dados antigos de agendamentos e configurações salvos em `localStorage` são importados e removidos após a confirmação da gravação no Firestore.
-
-O agendamento online para clientes está temporariamente pausado; a página orienta o contato pelo WhatsApp.
 
 ## Desenvolvimento
 

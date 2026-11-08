@@ -1,8 +1,8 @@
 {
     "name": "Painel Lídia Nails",
     "short_name": "Painel Lídia",
-    "start_url": "./#/admin",
-    "scope": "./",
+    "start_url": "/lidia-nails/#/admin",
+    "scope": "/lidia-nails/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#ff007f",
