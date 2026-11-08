@@ -1,7 +1,7 @@
 {
-    "name": "Lídia Nails",
-    "short_name": "Lídia Nails",
-    "start_url": "./",
+    "name": "Painel Lídia Nails",
+    "short_name": "Painel Lídia",
+    "start_url": "./#/admin",
     "scope": "./",
     "display": "standalone",
     "background_color": "#ffffff",
