@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "./firebaseAuth";
+import InstallAppButton from "./InstallAppButton";
 
 const mensagensErro = {
     "auth/invalid-credential": "E-mail ou senha incorretos.",
@@ -112,6 +113,9 @@ export default function AdminLogin() {
                 >
                     Esqueci minha senha
                 </button>
+                <div className="mt-5 flex justify-center">
+                    <InstallAppButton />
+                </div>
             </form>
         </main>
     );

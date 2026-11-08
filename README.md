@@ -1,7 +1,7 @@
 # Lídia Nails
 
 Aplicação de catálogo e painel administrativo para gerenciar serviços, agenda e faturamento.
-Em dispositivos móveis, o site pode ser instalado como app pela opção **Instalar app**.
+Em dispositivos móveis, instale o painel pela opção **Instalar app** na tela de acesso ou no painel; o app abre diretamente em `/admin`.
 
 ## Configuração do Firebase
 

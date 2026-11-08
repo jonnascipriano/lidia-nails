@@ -18,16 +18,14 @@ export default function Header(){
                 {pathname === "/" && <img src={imgUnha} alt="img de unha"/>}
 
                 {pathname === "/dashboard" && (
-                    <Link to="/admin">
-                        <ButtonSwitch>Voltar para Painel</ButtonSwitch>
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <InstallAppButton />
+                        <Link to="/admin">
+                            <ButtonSwitch>Voltar para Painel</ButtonSwitch>
+                        </Link>
+                    </div>
                 )}
             </header>
-            {pathname === "/" && (
-                <div className="flex justify-center bg-secondary pb-3 sm:hidden">
-                    <InstallAppButton />
-                </div>
-            )}
         </>
     )
 }

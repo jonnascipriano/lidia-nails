@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ButtonSwitch from "./ButtonSwitch";
+import InstallAppButton from "./InstallAppButton";
 import { calcularHorarioTermino } from "./horarios";
 import servicos from "./servicos";
 import {
@@ -435,7 +436,8 @@ export default function AdminDashboard({ onLogout }) {
                         <p className="mt-1 text-sm text-gray-500">Olá, Lídia! Gerencie sua agenda e horários aqui.</p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <InstallAppButton />
                         <Link to="/dashboard">
                             <ButtonSwitch>Dashboard</ButtonSwitch>
                         </Link>
