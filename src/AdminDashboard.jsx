@@ -713,9 +713,11 @@ export default function AdminDashboard({ activeTab }) {
                                                     >
                                                         <span className="block text-xs font-medium uppercase">{dia.rotulo}</span>
                                                         <span className="mt-0.5 block text-sm font-semibold">{dia.data}</span>
-                                                        <span className="mt-1 block whitespace-nowrap text-[10px] font-semibold leading-tight text-rose-700">
-                                                            {dia.quantidadeAgendamentos} agend.
-                                                        </span>
+                                                        {dia.quantidadeAgendamentos > 0 && (
+                                                            <span className="mt-1 block whitespace-nowrap text-[10px] font-semibold leading-tight text-rose-700">
+                                                                {dia.quantidadeAgendamentos} agend.
+                                                            </span>
+                                                        )}
                                                         {fechado && <span className="mt-1 block text-xs">Fechado</span>}
                                                     </button>
                                                 );
