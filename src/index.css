@@ -2,19 +2,38 @@
 
 
 @theme{
-    --color-primary: #FFF1F2;
+    --color-primary: #F8F7F5;
     --color-secondary: #FFF;
-    --color-tertiary: #474C53;
-    --color-info: #828890;
-    --color-destaque: #E11D48;
-    --color-button: #DBDEE2;
-    --color-hd-logo: #881337;
+    --color-tertiary: #292524;
+    --color-info: #78716C;
+    --color-destaque: #B96868;
+    --color-button: #E7E5E4;
+    --color-hd-logo: #784C4A;
 }
 
-h1{
-    @apply font-bold text-4xl tracking-wide
+html {
+    min-width: 320px;
+    background: var(--color-primary);
 }
 
-header img{
-    @apply w-10
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    color: var(--color-tertiary);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button:not(:disabled),
+a {
+    -webkit-tap-highlight-color: transparent;
 }

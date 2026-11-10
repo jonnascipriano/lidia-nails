@@ -1,7 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import ButtonSwitch from "./ButtonSwitch";
-import InstallAppButton from "./InstallAppButton";
 import { calcularHorarioTermino } from "./horarios";
 import servicos from "./servicos";
 import {
@@ -45,7 +42,7 @@ const compararAgendamentos = (a, b) => {
     return a.data.localeCompare(b.data);
 };
 
-export default function AdminDashboard({ onLogout }) {
+export default function AdminDashboard({ activeTab }) {
     const [diasFechados, setDiasFechados] = useState([]);
     const [horariosDisponiveis, setHorariosDisponiveis] = useState(gerarHorariosPadrao);
     const [diasCustomizados, setDiasCustomizados] = useState({});
@@ -110,33 +107,6 @@ export default function AdminDashboard({ onLogout }) {
     // === LÓGICA DE RESUMO FINANCEIRO ===
     const hojeData = new Date();
     const dataHojeStr = obterDataISO(hojeData);
-
-    const diaSemana = hojeData.getDay();
-    const diffParaSegunda = diaSemana === 0 ? 6 : diaSemana - 1;
-    const segunda = new Date(hojeData);
-    segunda.setDate(hojeData.getDate() - diffParaSegunda);
-    const dataSegundaStr = obterDataISO(segunda);
-    
-    const domingo = new Date(segunda);
-    domingo.setDate(segunda.getDate() + 6);
-    const dataDomingoStr = obterDataISO(domingo);
-
-    let faturamentoHoje = 0;
-    let faturamentoSemana = 0;
-    let qtdHoje = 0;
-    let qtdSemana = 0;
-
-    agendamentos.forEach(ag => {
-        const valorNum = Number(ag.valor) || 0;
-        if (ag.data === dataHojeStr) {
-            faturamentoHoje += valorNum;
-            qtdHoje++;
-        }
-        if (ag.data >= dataSegundaStr && ag.data <= dataDomingoStr) {
-            faturamentoSemana += valorNum;
-            qtdSemana++;
-        }
-    });
 
     // === AGRUPAMENTO DE AGENDAMENTOS POR DIA ===
     const agendamentosAgrupados = agendamentos.reduce((grupos, agendamento) => {
@@ -427,40 +397,9 @@ export default function AdminDashboard({ onLogout }) {
     });
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-[#fff8f5] via-[#fff] to-[#f8f1ff] p-5">
+        <section className="space-y-6">
             <div className="mx-auto max-w-7xl">
-                <header className="mb-8 flex flex-col gap-4 rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-gray-100 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-destaque">Lídia Nails</p>
-                        <h1 className="mt-2 text-3xl font-bold text-tertiary">Painel de Controle</h1>
-                        <p className="mt-1 text-sm text-gray-500">Olá, Lídia! Gerencie sua agenda e horários aqui.</p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
-                        <InstallAppButton />
-                        <Link to="/dashboard">
-                            <ButtonSwitch>Dashboard</ButtonSwitch>
-                        </Link>
-                        <button onClick={onLogout} className="rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-destaque transition hover:border-destaque hover:bg-destaque/5">
-                            Sair
-                        </button>
-                    </div>
-                </header>
-
-                {/* ===== NOVA SESSÃO: PREVISÃO DE FATURAMENTO ===== */}
-                <div className="mb-8 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-[24px] bg-gradient-to-r from-gray-800 to-gray-900 p-6 shadow-md text-white">
-                        <p className="text-sm text-gray-300 font-medium">Previsão para Hoje</p>
-                        <h2 className="mt-2 text-4xl font-bold text-green-400">R$ {faturamentoHoje}</h2>
-                        <p className="mt-1 text-sm text-gray-400">{qtdHoje} {qtdHoje === 1 ? 'agendamento' : 'agendamentos'} para hoje</p>
-                    </div>
-                    <div className="rounded-[24px] border border-destaque/20 bg-white p-6 shadow-sm">
-                        <p className="text-sm text-gray-500 font-medium">Previsão da Semana <span className="text-xs font-normal">(Seg a Dom)</span></p>
-                        <h2 className="mt-2 text-4xl font-bold text-destaque">R$ {faturamentoSemana}</h2>
-                        <p className="mt-1 text-sm text-gray-500">{qtdSemana} {qtdSemana === 1 ? 'agendamento' : 'agendamentos'} esta semana</p>
-                    </div>
-                </div>
-
+                {activeTab === "agenda" && (
                 <details className="group mb-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                     <summary className="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -684,7 +623,9 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
                     </div>
                 </details>
+                )}
 
+                {activeTab === "agendar" && (
                 <div className="mt-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                     <div className="mb-5">
                         <h2 className="text-xl font-bold text-tertiary">Agendar cliente</h2>
@@ -855,8 +796,10 @@ export default function AdminDashboard({ onLogout }) {
                         </div>
                     </form>
                 </div>
+                )}
 
                 {/* ===== NOVA SESSÃO: AGENDAMENTOS AGRUPADOS POR DIA ===== */}
+                {activeTab === "agenda" && (
                 <div className="mt-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                     <h2 className="mb-6 text-xl font-bold text-tertiary">Agenda de Clientes</h2>
 
@@ -1029,6 +972,7 @@ export default function AdminDashboard({ onLogout }) {
                         </div>
                     )}
                 </div>
+                )}
             </div>
         </section>
     );

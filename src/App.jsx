@@ -11,7 +11,7 @@ function App() {
             <Route path="/agendar" element={<LoginLanding />} />
 
             <Route
-                path="/admin"
+                path="/admin/*"
                 element={
                     <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-tertiary">Carregando...</div>}>
                         <AdminArea />

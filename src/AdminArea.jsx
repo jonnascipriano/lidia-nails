@@ -1,12 +1,20 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import AdminLogin from "./AdminLogin";
 import { auth } from "./firebaseAuth";
+import InstallAppButton from "./InstallAppButton";
 
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
 const ResumoDashboard = lazy(() => import("./ResumoDashboard"));
-const Header = lazy(() => import("./Header"));
+const GastosDashboard = lazy(() => import("./GastosDashboard"));
+
+const abas = [
+    { id: "agendar", rotulo: "Agendar", caminho: "/admin" },
+    { id: "agenda", rotulo: "Agenda Admin", caminho: "/admin/agenda" },
+    { id: "resumo", rotulo: "Resumo", caminho: "/admin/resumo" },
+    { id: "gastos", rotulo: "Gastos", caminho: "/admin/gastos" },
+];
 
 const carregando = (
     <div className="flex min-h-screen items-center justify-center bg-primary text-tertiary">
@@ -100,16 +108,61 @@ export default function AdminArea() {
 
     if (!usuario) return <AdminLogin />;
 
+    const abaAtiva = location.pathname === "/dashboard"
+        ? "resumo"
+        : abas.find((aba) => aba.caminho === location.pathname)?.id || "agendar";
+
     return (
-        <Suspense fallback={carregando}>
-            {location.pathname === "/admin" ? (
-                <AdminDashboard onLogout={sair} />
-            ) : (
-                <main>
-                    <Header />
-                    <ResumoDashboard />
-                </main>
-            )}
-        </Suspense>
+        <main className="min-h-screen bg-primary text-tertiary">
+            <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6">
+                <header className="flex flex-col gap-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:py-8">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-destaque">Lídia Nails</p>
+                        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Painel de gestão</h1>
+                        <p className="mt-1 text-sm text-info">Olá, Lídia. Organize seu dia por aqui.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <InstallAppButton />
+                        <button
+                            type="button"
+                            onClick={sair}
+                            className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-tertiary transition hover:border-destaque hover:text-destaque"
+                        >
+                            Sair
+                        </button>
+                    </div>
+                </header>
+
+                <nav
+                    aria-label="Seções do painel"
+                    className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-stone-200 bg-white p-1.5 shadow-sm"
+                >
+                    {abas.map((aba) => (
+                        <Link
+                            key={aba.id}
+                            to={aba.caminho}
+                            aria-current={abaAtiva === aba.id ? "page" : undefined}
+                            className={`min-w-max flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                                abaAtiva === aba.id
+                                    ? "bg-destaque text-white shadow-sm"
+                                    : "text-info hover:bg-primary hover:text-tertiary"
+                            }`}
+                        >
+                            {aba.rotulo}
+                        </Link>
+                    ))}
+                </nav>
+
+                <Suspense fallback={carregando}>
+                    {abaAtiva === "agendar" || abaAtiva === "agenda" ? (
+                        <AdminDashboard activeTab={abaAtiva} />
+                    ) : abaAtiva === "resumo" ? (
+                        <ResumoDashboard />
+                    ) : (
+                        <GastosDashboard />
+                    )}
+                </Suspense>
+            </div>
+        </main>
     );
 }

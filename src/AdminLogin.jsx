@@ -56,11 +56,11 @@ export default function AdminLogin() {
     };
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fff8f5] via-white to-[#f8f1ff] p-5">
-            <form onSubmit={handleLogin} className="w-full max-w-md rounded-[28px] bg-white p-8 shadow-lg ring-1 ring-gray-100">
+        <main className="flex min-h-screen items-center justify-center bg-primary p-5">
+            <form onSubmit={handleLogin} className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.25em] text-destaque">Lídia Nails</p>
                 <h1 className="mt-3 text-3xl font-bold text-tertiary">Acesso administrativo</h1>
-                <p className="mt-2 text-sm text-gray-500">Entre com o e-mail e a senha cadastrados pela administração.</p>
+                <p className="mt-2 text-sm text-info">Entre com o e-mail e a senha cadastrados pela administração.</p>
 
                 <label className="mt-6 block text-sm font-medium text-gray-700">
                     E-mail
@@ -70,7 +70,7 @@ export default function AdminLogin() {
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         required
-                        className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3 focus:border-destaque focus:outline-none"
+                        className="mt-1 w-full rounded-xl border border-stone-300 bg-white p-3 outline-none transition focus:border-destaque focus:ring-4 focus:ring-destaque/10"
                         placeholder="seu@email.com"
                     />
                 </label>
@@ -83,7 +83,7 @@ export default function AdminLogin() {
                         value={senha}
                         onChange={(event) => setSenha(event.target.value)}
                         required
-                        className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 p-3 focus:border-destaque focus:outline-none"
+                        className="mt-1 w-full rounded-xl border border-stone-300 bg-white p-3 outline-none transition focus:border-destaque focus:ring-4 focus:ring-destaque/10"
                         placeholder="Sua senha"
                     />
                 </label>

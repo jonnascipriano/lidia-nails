@@ -1,7 +1,20 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { calcularHorarioTermino } from "./horarios";
 import { observarAgendamentos } from "./agendamentosFirebase";
+import { observarGastos } from "./gastosFirebase";
+
+const obterDataLocal = () => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const dia = String(hoje.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+};
+
+const formatarMoeda = (valor) => new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+}).format(valor);
 
 export default function ResumoDashboard() {
     const [resumoHoje, setResumoHoje] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
@@ -10,6 +23,8 @@ export default function ResumoDashboard() {
     const [agendamentosPorDia, setAgendamentosPorDia] = useState({});
     const [erroAgendamentos, setErroAgendamentos] = useState("");
     const [agendamentos, setAgendamentos] = useState([]);
+    const [gastos, setGastos] = useState([]);
+    const [erroGastos, setErroGastos] = useState("");
 
     useEffect(() => {
         return observarAgendamentos(
@@ -20,6 +35,19 @@ export default function ResumoDashboard() {
             (erro) => setErroAgendamentos(`Não foi possível carregar os agendamentos: ${erro.message}`)
         );
     }, []);
+
+    useEffect(() => observarGastos(
+        (lista) => {
+            setGastos(lista);
+            setErroGastos("");
+        },
+        (erro) => setErroGastos(`Não foi possível carregar os gastos: ${erro.message}`)
+    ), []);
+
+    const mesAtual = obterDataLocal().slice(0, 7);
+    const totalGastosMes = gastos
+        .filter((gasto) => gasto.data?.startsWith(mesAtual))
+        .reduce((total, gasto) => total + (Number(gasto.valor) || 0), 0);
 
     useEffect(() => {
         const atualizarResumo = () => {
@@ -126,88 +154,91 @@ export default function ResumoDashboard() {
     }, [agendamentos]);
 
     const datasOrdenadas = Object.keys(agendamentosPorDia).sort();
-    const hojeISO = new Date().toISOString().split("T")[0];
+    const hojeISO = obterDataLocal();
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-[#fff8f5] via-[#fff] to-[#f8f1ff] p-5">
-            <div className="mx-auto max-w-7xl">
-                {/* Cabeçalho de Navegação */}
-                <header className="mb-8 flex flex-col gap-4 rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-gray-100 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-destaque">Lídia Nails</p>
-                        <h1 className="mt-2 text-3xl font-bold text-tertiary">Dashboard Financeiro</h1>
-                        <p className="mt-1 text-sm text-gray-500">Acompanhamento do faturamento e métricas de agendamentos.</p>
-                    </div>
+        <section className="space-y-6">
+            <div>
+                <h2 className="text-xl font-bold tracking-tight">Resumo</h2>
+                <p className="mt-1 text-sm text-info">Acompanhe atendimentos, faturamento e despesas do salão.</p>
+            </div>
 
-                    <div className="flex items-center gap-3">
-                        <Link
-                            to="/admin"
-                            className="rounded-full bg-tertiary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-tertiary/90"
-                        >
-                            Painel Admin
-                        </Link>
-                    </div>
-                </header>
+            {erroGastos && (
+                <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{erroGastos}</p>
+            )}
 
                 {/* Cards de Métricas */}
-                <div className="mb-8 grid gap-5 md:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {/* Resumo Hoje */}
-                    <div className="rounded-[26px] bg-gradient-to-br from-gray-800 to-gray-900 p-6 text-white shadow-lg flex flex-col justify-between">
+                    <div className="flex flex-col justify-between rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5">
                         <div>
-                            <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-bold text-green-300 uppercase tracking-wider">
+                            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
                                 Hoje
                             </span>
-                            <p className="mt-4 text-sm text-gray-300">Faturamento Realizado</p>
-                            <h2 className="mt-1 text-4xl font-extrabold text-green-400">R$ {resumoHoje.valor}</h2>
-                            <p className="mt-2 text-xs text-gray-400">
+                            <p className="mt-4 text-sm text-info">Faturamento realizado</p>
+                            <h3 className="mt-1 text-2xl font-bold text-emerald-800">{formatarMoeda(resumoHoje.valor)}</h3>
+                            <p className="mt-2 text-xs text-info">
                                 {resumoHoje.qtd} de {resumoHoje.qtdTotal} {resumoHoje.qtdTotal === 1 ? "atendimento concluído" : "atendimentos concluídos"}
                             </p>
                         </div>
-                        <div className="mt-6 border-t border-gray-700/60 pt-3 flex justify-between text-xs text-gray-300">
-                            <span>Previsão Total Hoje:</span>
-                            <strong className="text-white">R$ {resumoHoje.valorTotal}</strong>
+                        <div className="mt-5 flex justify-between border-t border-emerald-200 pt-3 text-xs text-info">
+                            <span>Previsão total hoje</span>
+                            <strong className="text-tertiary">{formatarMoeda(resumoHoje.valorTotal)}</strong>
                         </div>
                     </div>
 
                     {/* Resumo da Semana */}
-                    <div className="rounded-[26px] border border-gray-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+                    <div className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
                         <div>
-                            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600 uppercase tracking-wider">
-                                Esta Semana (Seg a Dom)
+                            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-800">
+                                Esta semana
                             </span>
-                            <p className="mt-4 text-sm text-gray-500">Realizado na Semana</p>
-                            <h2 className="mt-1 text-3xl font-bold text-tertiary">R$ {resumoSemana.valor}</h2>
-                            <p className="mt-2 text-xs text-gray-500">
+                            <p className="mt-4 text-sm text-info">Faturamento realizado</p>
+                            <h3 className="mt-1 text-2xl font-bold">{formatarMoeda(resumoSemana.valor)}</h3>
+                            <p className="mt-2 text-xs text-info">
                                 {resumoSemana.qtd} {resumoSemana.qtd === 1 ? "atendimento realizado" : "atendimentos realizados"}
                             </p>
                         </div>
-                        <div className="mt-6 border-t border-gray-100 pt-3 flex justify-between text-xs text-gray-600">
-                            <span>Previsão Total da Semana:</span>
-                            <strong className="text-destaque">R$ {resumoSemana.valorTotal}</strong>
+                        <div className="mt-5 flex justify-between border-t border-stone-100 pt-3 text-xs text-info">
+                            <span>Previsão total</span>
+                            <strong className="text-destaque">{formatarMoeda(resumoSemana.valorTotal)}</strong>
                         </div>
                     </div>
 
                     {/* Resumo do Mês */}
-                    <div className="rounded-[26px] border border-gray-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+                    <div className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
                         <div>
-                            <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-bold text-destaque uppercase tracking-wider">
-                                Este Mês
+                            <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-destaque">
+                                Este mês
                             </span>
-                            <p className="mt-4 text-sm text-gray-500">Realizado no Mês</p>
-                            <h2 className="mt-1 text-3xl font-bold text-tertiary">R$ {resumoMes.valor}</h2>
-                            <p className="mt-2 text-xs text-gray-500">
+                            <p className="mt-4 text-sm text-info">Faturamento realizado</p>
+                            <h3 className="mt-1 text-2xl font-bold">{formatarMoeda(resumoMes.valor)}</h3>
+                            <p className="mt-2 text-xs text-info">
                                 {resumoMes.qtd} {resumoMes.qtd === 1 ? "atendimento realizado" : "atendimentos realizados"}
                             </p>
                         </div>
-                        <div className="mt-6 border-t border-gray-100 pt-3 flex justify-between text-xs text-gray-600">
-                            <span>Previsão Total do Mês:</span>
-                            <strong className="text-destaque">R$ {resumoMes.valorTotal}</strong>
+                        <div className="mt-5 flex justify-between border-t border-stone-100 pt-3 text-xs text-info">
+                            <span>Previsão total</span>
+                            <strong className="text-destaque">{formatarMoeda(resumoMes.valorTotal)}</strong>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col justify-between rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
+                        <div>
+                            <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-rose-800">
+                                Saldo do mês
+                            </span>
+                            <p className="mt-4 text-sm text-info">Realizado menos gastos</p>
+                            <h3 className={`mt-1 text-2xl font-bold ${resumoMes.valor - totalGastosMes >= 0 ? "text-emerald-800" : "text-rose-800"}`}>
+                                {formatarMoeda(resumoMes.valor - totalGastosMes)}
+                            </h3>
+                            <p className="mt-2 text-xs text-info">Gastos cadastrados: {formatarMoeda(totalGastosMes)}</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Lista de Agendamentos por Dia */}
-                <div className="rounded-[26px] border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
                     <h2 className="mb-6 text-xl font-bold text-tertiary">Histórico e Próximos Agendamentos</h2>
 
                     {erroAgendamentos ? (
@@ -271,7 +302,6 @@ export default function ResumoDashboard() {
                         </div>
                     )}
                 </div>
-            </div>
         </section>
     );
 }
