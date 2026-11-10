@@ -37,10 +37,14 @@ const obterDataISO = (data) => {
     return `${ano}-${mes}-${dia}`;
 };
 
-const compararAgendamentos = (a, b) => {
-    if (a.data === b.data) return a.horario.localeCompare(b.horario);
-    return a.data.localeCompare(b.data);
-};
+const compararAgendamentos = (a, b) =>
+    a.data.localeCompare(b.data) || a.horario.localeCompare(b.horario);
+
+const agruparPorData = (lista) => lista.reduce((grupos, agendamento) => {
+    if (!grupos[agendamento.data]) grupos[agendamento.data] = [];
+    grupos[agendamento.data].push(agendamento);
+    return grupos;
+}, {});
 
 export default function AdminDashboard({ activeTab }) {
     const [diasFechados, setDiasFechados] = useState([]);
@@ -109,19 +113,22 @@ export default function AdminDashboard({ activeTab }) {
     const dataHojeStr = obterDataISO(hojeData);
 
     // === AGRUPAMENTO DE AGENDAMENTOS POR DIA ===
-    const agendamentosAgrupados = agendamentos.reduce((grupos, agendamento) => {
-        if (!grupos[agendamento.data]) {
-            grupos[agendamento.data] = [];
-        }
-        grupos[agendamento.data].push(agendamento);
-        return grupos;
-    }, {});
+    const agoraEmMinutos = hojeData.getHours() * 60 + hojeData.getMinutes() + hojeData.getSeconds() / 60;
+    const agendamentosProximos = agendamentos.filter((agendamento) => {
+        if (agendamento.data > dataHojeStr) return true;
+        if (agendamento.data < dataHojeStr) return false;
+
+        const [horas, minutos] = (agendamento.horario || "00:00").split(":").map(Number);
+        const terminoEmMinutos = horas * 60 + minutos + (Number(agendamento.duracao) || 15);
+        return terminoEmMinutos > agoraEmMinutos;
+    });
+    const agendamentosAnteriores = agendamentos.filter((agendamento) => !agendamentosProximos.includes(agendamento));
+    const agendamentosProximosAgrupados = agruparPorData(agendamentosProximos);
+    const agendamentosAnterioresAgrupados = agruparPorData(agendamentosAnteriores);
+    const agendamentosAgrupados = agruparPorData(agendamentos);
     const datasComAgendamento = Object.keys(agendamentosAgrupados);
-    const datasProximasComAgendamento = datasComAgendamento
-        .filter((data) => data >= dataHojeStr)
-        .sort();
-    const datasAnterioresComAgendamento = datasComAgendamento
-        .filter((data) => data < dataHojeStr)
+    const datasProximasComAgendamento = Object.keys(agendamentosProximosAgrupados).sort();
+    const datasAnterioresComAgendamento = Object.keys(agendamentosAnterioresAgrupados)
         .sort()
         .reverse();
     const gruposDeDatas = [
@@ -819,8 +826,11 @@ export default function AdminDashboard({ activeTab }) {
                         <div className="flex flex-col gap-8">
                             {gruposDeDatas.map((grupo) => {
                                 const isGrupoAnterior = grupo.titulo === "Agendamentos anteriores";
+                                const agendamentosDoGrupo = isGrupoAnterior
+                                    ? agendamentosAnterioresAgrupados
+                                    : agendamentosProximosAgrupados;
                                 const quantidadeAgendamentos = grupo.datas.reduce(
-                                    (total, data) => total + agendamentosAgrupados[data].length,
+                                    (total, data) => total + agendamentosDoGrupo[data].length,
                                     0
                                 );
 
@@ -869,12 +879,12 @@ export default function AdminDashboard({ activeTab }) {
                                             {isHoje && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">HOJE</span>}
                                             {isAmanha && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">AMANHÃ</span>}
                                             <span className="text-sm text-gray-500">
-                                                {agendamentosAgrupados[dataGrupo].length} {agendamentosAgrupados[dataGrupo].length === 1 ? "cliente" : "clientes"}
+                                                {agendamentosDoGrupo[dataGrupo].length} {agendamentosDoGrupo[dataGrupo].length === 1 ? "cliente" : "clientes"}
                                             </span>
                                         </div>
                                         
                                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                            {[...agendamentosAgrupados[dataGrupo]].sort(compararAgendamentos).map((agendamento, index) => {
+                                            {[...agendamentosDoGrupo[dataGrupo]].sort(compararAgendamentos).map((agendamento, index) => {
                                                 const estaEditando = agendamentoEmEdicao === agendamento;
                                                 const historicoEdicoes = Array.isArray(agendamento.historicoEdicoes)
                                                     ? agendamento.historicoEdicoes

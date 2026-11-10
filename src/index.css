@@ -2,13 +2,13 @@
 
 
 @theme{
-    --color-primary: #F8F7F5;
+    --color-primary: #FFF7F9;
     --color-secondary: #FFF;
-    --color-tertiary: #292524;
-    --color-info: #78716C;
-    --color-destaque: #B96868;
-    --color-button: #E7E5E4;
-    --color-hd-logo: #784C4A;
+    --color-tertiary: #3D2933;
+    --color-info: #876F7A;
+    --color-destaque: #C45F7D;
+    --color-button: #F2E3E9;
+    --color-hd-logo: #91425E;
 }
 
 html {
