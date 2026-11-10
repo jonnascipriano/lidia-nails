@@ -1,1 +1,0 @@
-import{a as e,d as t,l as n,n as r,r as i,t as a,u as o}from"./firebaseFirestore-DQkds2i4.js";var s=n(a,`gastos`),c=(t,n)=>e(s,e=>{t(e.docs.map(e=>({...e.data(),id:e.id})).sort((e,t)=>t.data.localeCompare(e.data)))},n),l=e=>r(s,{...e,criadoEm:t()}),u=e=>i(o(a,`gastos`,e));export{u as n,c as r,l as t};

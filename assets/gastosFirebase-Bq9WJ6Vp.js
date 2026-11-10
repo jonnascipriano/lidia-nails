@@ -1,0 +1,1 @@
+import{a as e,i as t,n,o as r,r as i,s as a,t as o}from"./agendamentosFirebase-B35g1NGF.js";var s=e(o,`gastos`),c=(e,n)=>t(s,t=>{e(t.docs.map(e=>({...e.data(),id:e.id})).sort((e,t)=>t.data.localeCompare(e.data)))},n),l=e=>n(s,{...e,criadoEm:a()}),u=e=>i(r(o,`gastos`,e));export{u as n,c as r,l as t};
