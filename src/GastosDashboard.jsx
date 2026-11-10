@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { criarGasto, excluirGasto, observarGastos } from "./gastosFirebase";
+import { observarAgendamentos } from "./agendamentosFirebase";
 
 const tiposDeGasto = [
     "Produtos",
@@ -9,8 +10,7 @@ const tiposDeGasto = [
     "Outros",
 ];
 
-const obterDataLocal = () => {
-    const hoje = new Date();
+const obterDataLocal = (hoje = new Date()) => {
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, "0");
     const dia = String(hoje.getDate()).padStart(2, "0");
@@ -27,6 +27,9 @@ export default function GastosDashboard() {
     const [valor, setValor] = useState("");
     const [tipo, setTipo] = useState(tiposDeGasto[0]);
     const [gastos, setGastos] = useState([]);
+    const [agendamentos, setAgendamentos] = useState([]);
+    const [erroAgendamentos, setErroAgendamentos] = useState("");
+    const [agora, setAgora] = useState(() => new Date());
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
@@ -44,12 +47,38 @@ export default function GastosDashboard() {
         }
     ), []);
 
+    useEffect(() => observarAgendamentos(
+        setAgendamentos,
+        (erroAtual) => setErroAgendamentos(`Não foi possível carregar o faturamento: ${erroAtual.message}`)
+    ), []);
+
+    useEffect(() => {
+        const intervalo = setInterval(() => setAgora(new Date()), 60 * 1000);
+        return () => clearInterval(intervalo);
+    }, []);
+
+    const dataHoje = obterDataLocal(agora);
+    const mesAtual = dataHoje.slice(0, 7);
     const totalMes = useMemo(() => {
-        const mesAtual = obterDataLocal().slice(0, 7);
         return gastos
             .filter((gasto) => gasto.data?.startsWith(mesAtual))
             .reduce((total, gasto) => total + (Number(gasto.valor) || 0), 0);
-    }, [gastos]);
+    }, [gastos, mesAtual]);
+
+    const faturamentoMes = useMemo(() => agendamentos.reduce((total, agendamento) => {
+        if (!agendamento.data?.startsWith(mesAtual) || agendamento.data > dataHoje) return total;
+
+        if (agendamento.data === dataHoje) {
+            const [horas, minutos] = (agendamento.horario || "").split(":").map(Number);
+            if (!Number.isFinite(horas) || !Number.isFinite(minutos)) return total;
+            const terminoEmSegundos = (horas * 60 + minutos + (Number(agendamento.duracao) || 15)) * 60;
+            const agoraEmSegundos = agora.getHours() * 3600 + agora.getMinutes() * 60 + agora.getSeconds();
+            if (terminoEmSegundos > agoraEmSegundos) return total;
+        }
+
+        return total + (Number(agendamento.valor) || 0);
+    }, 0), [agendamentos, agora, dataHoje, mesAtual]);
+    const saldoMes = faturamentoMes - totalMes;
 
     const salvarGasto = async (event) => {
         event.preventDefault();
@@ -146,6 +175,7 @@ export default function GastosDashboard() {
                     </div>
 
                     {erro && <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{erro}</p>}
+                    {erroAgendamentos && <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{erroAgendamentos}</p>}
                     {mensagem && <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{mensagem}</p>}
 
                     <button
@@ -157,14 +187,20 @@ export default function GastosDashboard() {
                     </button>
                 </form>
 
-                <aside className="flex flex-col justify-between rounded-2xl border border-rose-100 bg-rose-50/70 p-5 sm:p-6">
-                    <div>
+                <aside className="rounded-2xl border border-rose-100 bg-rose-50/70 p-5 sm:p-6">
+                    <div className="border-b border-rose-200/70 pb-5">
                         <p className="text-sm font-medium text-rose-800">Total de gastos neste mês</p>
-                        <p className="mt-3 text-3xl font-bold tracking-tight text-rose-900">{formatarMoeda(totalMes)}</p>
+                        <p className="mt-2 text-3xl font-bold tracking-tight text-rose-900">{formatarMoeda(totalMes)}</p>
                     </div>
-                    <p className="mt-6 text-sm leading-6 text-rose-800/80">
-                        O total considera os gastos registrados neste mês. As despesas também aparecem no saldo da aba Resumo.
-                    </p>
+                    <div className="pt-5">
+                        <p className="text-sm font-medium text-rose-800">Saldo do mês</p>
+                        <p className={`mt-2 text-3xl font-bold tracking-tight ${saldoMes >= 0 ? "text-emerald-800" : "text-rose-900"}`}>
+                            {formatarMoeda(saldoMes)}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-rose-800/80">
+                            Ganhos realizados ({formatarMoeda(faturamentoMes)}) menos os gastos deste mês.
+                        </p>
+                    </div>
                 </aside>
             </div>
 

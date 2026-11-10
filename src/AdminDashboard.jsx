@@ -702,16 +702,20 @@ export default function AdminDashboard({ activeTab }) {
                                                         }}
                                                         disabled={fechado}
                                                         aria-pressed={selecionado}
-                                                        className={`min-w-[76px] shrink-0 rounded-xl border px-3 py-2 text-center transition ${
+                                                        className={`min-w-[76px] shrink-0 rounded-xl border px-1.5 py-2 text-center transition ${
                                                             fechado
                                                                 ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                                                                 : selecionado
-                                                                    ? "border-destaque bg-destaque text-white"
+                                                                    ? "border-destaque bg-rose-50 text-rose-800"
                                                                     : "border-gray-200 bg-white text-tertiary hover:border-destaque/50 hover:bg-primary"
                                                         }`}
+                                                        aria-label={`${dia.rotulo}, ${dia.data}: ${dia.quantidadeAgendamentos} ${dia.quantidadeAgendamentos === 1 ? "agendamento" : "agendamentos"}${fechado ? ", salão fechado" : ""}`}
                                                     >
                                                         <span className="block text-xs font-medium uppercase">{dia.rotulo}</span>
                                                         <span className="mt-0.5 block text-sm font-semibold">{dia.data}</span>
+                                                        <span className="mt-1 block whitespace-nowrap text-[10px] font-semibold leading-tight text-rose-700">
+                                                            {dia.quantidadeAgendamentos} agend.
+                                                        </span>
                                                         {fechado && <span className="mt-1 block text-xs">Fechado</span>}
                                                     </button>
                                                 );
