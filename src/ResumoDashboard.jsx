@@ -15,10 +15,13 @@ const formatarMoeda = (valor) => new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
 }).format(valor);
 
+const formatarHorasTrabalhadas = (minutos) =>
+    `${Math.floor(minutos / 60)}h ${minutos % 60}min`;
+
 export default function ResumoDashboard() {
-    const [resumoHoje, setResumoHoje] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
-    const [resumoSemana, setResumoSemana] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
-    const [resumoMes, setResumoMes] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
+    const [resumoHoje, setResumoHoje] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0, minutosTrabalhados: 0 });
+    const [resumoSemana, setResumoSemana] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0, minutosTrabalhados: 0 });
+    const [resumoMes, setResumoMes] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0, minutosTrabalhados: 0 });
     const [erroAgendamentos, setErroAgendamentos] = useState("");
     const [agendamentos, setAgendamentos] = useState([]);
     const [gastos, setGastos] = useState([]);
@@ -54,6 +57,7 @@ export default function ResumoDashboard() {
             const mes = String(hoje.getMonth() + 1).padStart(2, "0");
             const dia = String(hoje.getDate()).padStart(2, "0");
             const dataHojeStr = `${ano}-${mes}-${dia}`;
+            const agoraEmMinutos = hoje.getHours() * 60 + hoje.getMinutes();
             const agoraEmSegundos = hoje.getHours() * 3600 + hoje.getMinutes() * 60 + hoje.getSeconds();
 
             // Cálculo da semana (Segunda a Domingo)
@@ -76,30 +80,40 @@ export default function ResumoDashboard() {
 
             const anoMesStr = `${ano}-${mes}`;
 
-            let calcHoje = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 };
-            let calcSemana = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 };
-            let calcMes = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 };
+            let calcHoje = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0, minutosTrabalhados: 0 };
+            let calcSemana = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0, minutosTrabalhados: 0 };
+            let calcMes = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0, minutosTrabalhados: 0 };
 
             agendamentos.forEach((ag) => {
                 const valorNumerico = Number(ag.valor) || 0;
+                const duracaoEmMinutos = Number(ag.duracao) > 0 ? Number(ag.duracao) : 15;
 
                 // Verificação se o horário de HOJE já passou
                 let atendeuHoje = false;
+                let minutosTrabalhados = 0;
                 if (ag.data === dataHojeStr && typeof ag.horario === "string") {
                     const [horas, minutos] = ag.horario.split(":").map(Number);
                     if (Number.isFinite(horas) && Number.isFinite(minutos)) {
-                        const inicioEmSegundos = horas * 3600 + minutos * 60;
-                        const duracaoEmSegundos = (Number(ag.duracao) || 15) * 60;
+                        const inicioEmMinutos = horas * 60 + minutos;
+                        const inicioEmSegundos = inicioEmMinutos * 60;
+                        const duracaoEmSegundos = duracaoEmMinutos * 60;
                         if (inicioEmSegundos + duracaoEmSegundos <= agoraEmSegundos) {
                             atendeuHoje = true;
                         }
+                        minutosTrabalhados = Math.min(
+                            duracaoEmMinutos,
+                            Math.max(0, agoraEmMinutos - inicioEmMinutos)
+                        );
                     }
+                } else if (ag.data < dataHojeStr) {
+                    minutosTrabalhados = duracaoEmMinutos;
                 }
 
                 // Cálculo HOJE
                 if (ag.data === dataHojeStr) {
                     calcHoje.qtdTotal += 1;
                     calcHoje.valorTotal += valorNumerico;
+                    calcHoje.minutosTrabalhados += minutosTrabalhados;
                     if (atendeuHoje) {
                         calcHoje.qtd += 1;
                         calcHoje.valor += valorNumerico;
@@ -114,6 +128,7 @@ export default function ResumoDashboard() {
                         calcSemana.qtd += 1;
                         calcSemana.valor += valorNumerico;
                     }
+                    calcSemana.minutosTrabalhados += minutosTrabalhados;
                 }
 
                 // Cálculo MÊS
@@ -124,6 +139,7 @@ export default function ResumoDashboard() {
                         calcMes.qtd += 1;
                         calcMes.valor += valorNumerico;
                     }
+                    calcMes.minutosTrabalhados += minutosTrabalhados;
                 }
             });
 
@@ -164,6 +180,9 @@ export default function ResumoDashboard() {
                             <p className="mt-2 text-xs text-info">
                                 {resumoHoje.qtd} de {resumoHoje.qtdTotal} {resumoHoje.qtdTotal === 1 ? "atendimento concluído" : "atendimentos concluídos"}
                             </p>
+                            <p className="mt-1 text-xs font-medium text-emerald-900">
+                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoHoje.minutosTrabalhados)}
+                            </p>
                         </div>
                         <div className="mt-5 flex justify-between border-t border-emerald-300 pt-3 text-xs text-info">
                             <span>Previsão total hoje</span>
@@ -180,7 +199,10 @@ export default function ResumoDashboard() {
                             <p className="mt-4 text-sm text-info">Faturamento realizado</p>
                             <h3 className="mt-1 text-2xl font-bold">{formatarMoeda(resumoSemana.valor)}</h3>
                             <p className="mt-2 text-xs text-info">
-                                {resumoSemana.qtd} {resumoSemana.qtd === 1 ? "atendimento realizado" : "atendimentos realizados"}
+                                {resumoSemana.qtd} {resumoSemana.qtd === 1 ? "atendimento concluído" : "atendimentos concluídos"}
+                            </p>
+                            <p className="mt-1 text-xs font-medium text-sky-900">
+                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoSemana.minutosTrabalhados)}
                             </p>
                         </div>
                         <div className="mt-5 flex justify-between border-t border-sky-300 pt-3 text-xs text-info">
@@ -198,7 +220,10 @@ export default function ResumoDashboard() {
                             <p className="mt-4 text-sm text-info">Faturamento realizado</p>
                             <h3 className="mt-1 text-2xl font-bold">{formatarMoeda(resumoMes.valor)}</h3>
                             <p className="mt-2 text-xs text-info">
-                                {resumoMes.qtd} {resumoMes.qtd === 1 ? "atendimento realizado" : "atendimentos realizados"}
+                                {resumoMes.qtd} {resumoMes.qtd === 1 ? "atendimento concluído" : "atendimentos concluídos"}
+                            </p>
+                            <p className="mt-1 text-xs font-medium text-violet-900">
+                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoMes.minutosTrabalhados)}
                             </p>
                         </div>
                         <div className="mt-5 flex justify-between border-t border-violet-300 pt-3 text-xs text-info">

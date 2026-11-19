@@ -44,8 +44,14 @@ const formatarDuracao = (minutos) => {
     return restoMinutos ? `${horas} h ${restoMinutos} min` : `${horas} h`;
 };
 
+const formatarMoeda = (valor) => new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+}).format(Number(valor) || 0);
+
 export default function LinhaTempoDashboard() {
     const [data, setData] = useState(obterDataLocal);
+    const [agora, setAgora] = useState(() => new Date());
     const [agendamentos, setAgendamentos] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
@@ -62,6 +68,11 @@ export default function LinhaTempoDashboard() {
         }
     ), []);
 
+    useEffect(() => {
+        const intervalo = setInterval(() => setAgora(new Date()), 60 * 1000);
+        return () => clearInterval(intervalo);
+    }, []);
+
     const atendimentosDoDia = agendamentos
         .filter((agendamento) => agendamento.data === data)
         .map((agendamento) => {
@@ -76,6 +87,15 @@ export default function LinhaTempoDashboard() {
         (termino, agendamento) => Math.max(termino, agendamento.fim),
         0
     );
+    const minutosTrabalhados = atendimentosDoDia.reduce((total, agendamento) => {
+        if (data < obterDataLocal(agora)) return total + agendamento.duracao;
+        if (data !== obterDataLocal(agora)) return total;
+        const minutoAtual = agora.getHours() * 60 + agora.getMinutes();
+        return total + Math.min(
+            agendamento.duracao,
+            Math.max(0, minutoAtual - agendamento.inicio)
+        );
+    }, 0);
 
     return (
         <section className="space-y-6">
@@ -102,9 +122,15 @@ export default function LinhaTempoDashboard() {
                     Carregando agenda...
                 </p>
             ) : atendimentosDoDia.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-stone-300 bg-white p-8 text-center text-sm text-info">
-                    Não há agendamentos com horário marcado neste dia.
-                </p>
+                <>
+                    <p className="rounded-2xl border border-dashed border-stone-300 bg-white p-8 text-center text-sm text-info">
+                        Não há agendamentos com horário marcado neste dia.
+                    </p>
+                    <aside className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                        <p className="text-sm font-medium text-info">Horas trabalhadas no dia</p>
+                        <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosTrabalhados)}</p>
+                    </aside>
+                </>
             ) : (
                 <>
                     <ol className="space-y-0">
@@ -134,6 +160,9 @@ export default function LinhaTempoDashboard() {
                                                 </p>
                                                 <h3 className="mt-1 font-semibold">{agendamento.nomeCliente || "Cliente sem nome"}</h3>
                                                 <p className="mt-1 text-sm text-info">{agendamento.servico || "Serviço não informado"}</p>
+                                                <p className="mt-1 text-sm font-semibold text-emerald-700">
+                                                    {formatarMoeda(agendamento.valor)}
+                                                </p>
                                             </div>
                                             <div className="text-sm sm:text-right">
                                                 <p className="font-semibold text-tertiary">
@@ -148,8 +177,16 @@ export default function LinhaTempoDashboard() {
                         })}
                     </ol>
                     <aside className="rounded-2xl border border-destaque/20 bg-rose-50/70 p-5">
-                        <p className="text-sm font-medium text-info">Previsão de término do último agendamento</p>
-                        <p className="mt-1 text-2xl font-bold text-destaque">{formatarHorario(terminoFinal)}</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <p className="text-sm font-medium text-info">Previsão de término do último agendamento</p>
+                                <p className="mt-1 text-2xl font-bold text-destaque">{formatarHorario(terminoFinal)}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-info">Horas trabalhadas no dia</p>
+                                <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosTrabalhados)}</p>
+                            </div>
+                        </div>
                     </aside>
                 </>
             )}

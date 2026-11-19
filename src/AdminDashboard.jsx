@@ -59,7 +59,8 @@ export default function AdminDashboard({ activeTab }) {
     const [dataCustom, setDataCustom] = useState("");
     const [horarioExtra, setHorarioExtra] = useState("");
     const [agendamentoEmEdicao, setAgendamentoEmEdicao] = useState(null);
-    const [anterioresExpandidos, setAnterioresExpandidos] = useState(false);
+    const [anterioresExpandidos, setAnterioresExpandidos] = useState(true);
+    const [dataAgendaSelecionada, setDataAgendaSelecionada] = useState(() => obterDataISO(new Date()));
     const [valorEditado, setValorEditado] = useState("");
     const [observacaoEdicao, setObservacaoEdicao] = useState("");
     const [nomeClienteManual, setNomeClienteManual] = useState("");
@@ -125,8 +126,6 @@ export default function AdminDashboard({ activeTab }) {
     const agendamentosAnteriores = agendamentos.filter((agendamento) => !agendamentosProximos.includes(agendamento));
     const agendamentosProximosAgrupados = agruparPorData(agendamentosProximos);
     const agendamentosAnterioresAgrupados = agruparPorData(agendamentosAnteriores);
-    const agendamentosAgrupados = agruparPorData(agendamentos);
-    const datasComAgendamento = Object.keys(agendamentosAgrupados);
     const datasProximasComAgendamento = Object.keys(agendamentosProximosAgrupados).sort();
     const datasAnterioresComAgendamento = Object.keys(agendamentosAnterioresAgrupados)
         .sort()
@@ -135,6 +134,15 @@ export default function AdminDashboard({ activeTab }) {
         { titulo: "Próximos agendamentos", datas: datasProximasComAgendamento },
         { titulo: "Agendamentos anteriores", datas: datasAnterioresComAgendamento },
     ].filter((grupo) => grupo.datas.length > 0);
+    const gruposDaDataAgenda = gruposDeDatas
+        .map((grupo) => ({
+            ...grupo,
+            datas: grupo.datas.filter((data) => data === dataAgendaSelecionada),
+        }))
+        .filter((grupo) => grupo.datas.length > 0);
+    const agendamentosDaDataAgenda = agendamentos.filter(
+        (agendamento) => agendamento.data === dataAgendaSelecionada
+    );
 
     // === FUNÇÕES DE AÇÃO COM MELHORIAS ===
     const salvarConfiguracoes = async () => {
@@ -414,6 +422,11 @@ export default function AdminDashboard({ activeTab }) {
             quantidadeAgendamentos: agendamentos.filter((agendamento) => agendamento.data === obterDataISO(data)).length,
         };
     });
+
+    const selecionarDataAgenda = (data) => {
+        setDataAgendaSelecionada(data);
+        setAnterioresExpandidos(true);
+    };
 
     return (
         <section className="space-y-6">
@@ -865,13 +878,64 @@ export default function AdminDashboard({ activeTab }) {
                         <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
                             Carregando agendamentos...
                         </div>
-                    ) : datasComAgendamento.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
-                            Ainda não há clientes agendadas.
-                        </div>
                     ) : (
-                        <div className="flex flex-col gap-8">
-                            {gruposDeDatas.map((grupo) => {
+                        <div className="grid items-start gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
+                            <aside className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                                <h3 className="text-sm font-bold text-tertiary">Calendário da agenda</h3>
+                                <label className="mt-3 block text-sm font-medium text-gray-700">
+                                    Escolher data
+                                    <input
+                                        type="date"
+                                        value={dataAgendaSelecionada}
+                                        onChange={(event) => selecionarDataAgenda(event.target.value)}
+                                        className="mt-1 w-full rounded-xl border border-gray-300 bg-white p-2.5 text-sm focus:border-destaque focus:outline-none"
+                                    />
+                                </label>
+                                <p className="mb-2 mt-4 text-xs font-medium text-gray-500">Próximos dias</p>
+                                <div className="max-h-[28rem] space-y-2 overflow-y-auto">
+                                    {diasProximos.map((dia) => {
+                                        const selecionado = dataAgendaSelecionada === dia.valor;
+                                        return (
+                                            <button
+                                                key={dia.valor}
+                                                type="button"
+                                                onClick={() => selecionarDataAgenda(dia.valor)}
+                                                aria-pressed={selecionado}
+                                                className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition ${
+                                                    selecionado
+                                                        ? "border-destaque bg-rose-50 text-rose-900"
+                                                        : "border-gray-200 bg-white text-tertiary hover:border-destaque/50"
+                                                }`}
+                                            >
+                                                <span className="min-w-0">
+                                                    <span className="block text-xs font-medium capitalize">{dia.rotulo}</span>
+                                                    <span className="text-sm font-semibold">{dia.data}</span>
+                                                </span>
+                                                <span className="shrink-0 rounded-full bg-primary px-2 py-1 text-xs text-info">
+                                                    {dia.quantidadeAgendamentos}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </aside>
+
+                            <div className="min-w-0">
+                                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                    <h3 className="text-lg font-bold text-tertiary">
+                                        Agendamentos de {dataAgendaSelecionada.split("-").reverse().join("/")}
+                                    </h3>
+                                    <span className="text-sm text-info">
+                                        {agendamentosDaDataAgenda.length} {agendamentosDaDataAgenda.length === 1 ? "cliente" : "clientes"}
+                                    </span>
+                                </div>
+                                {agendamentosDaDataAgenda.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
+                                        Não há agendamentos nesta data.
+                                    </div>
+                                ) : (
+                                <div className="flex flex-col gap-8">
+                            {gruposDaDataAgenda.map((grupo) => {
                                 const isGrupoAnterior = grupo.titulo === "Agendamentos anteriores";
                                 const agendamentosDoGrupo = isGrupoAnterior
                                     ? agendamentosAnterioresAgrupados
@@ -1029,8 +1093,11 @@ export default function AdminDashboard({ activeTab }) {
                         </div>
                     )}
                 </div>
+                    </div>
                 )}
             </div>
+            )}
+        </div>
         </section>
     );
 }

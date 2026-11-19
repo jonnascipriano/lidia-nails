@@ -52,19 +52,28 @@ export default function HistoricoDashboard() {
         }
     ), []);
 
-    const historico = [...agendamentos].sort((a, b) =>
-        (b.data || "").localeCompare(a.data || "") ||
-        (b.horario || "").localeCompare(a.horario || "")
-    );
     const dataHoje = obterDataLocal(agora);
     const minutoAtual = agora.getHours() * 60 + agora.getMinutes();
-    const agendamentosFiltrados = historico.filter((agendamento) => {
+    const estaConcluido = (agendamento) => {
         const inicio = converterParaMinutos(agendamento.horario);
         const termino = inicio === null
             ? null
             : inicio + (Number(agendamento.duracao) || 15);
-        const concluido = agendamento.data < dataHoje ||
+        return agendamento.data < dataHoje ||
             (agendamento.data === dataHoje && termino !== null && termino <= minutoAtual);
+    };
+    const historico = [...agendamentos].sort((a, b) => {
+        const aConcluido = estaConcluido(a);
+        const bConcluido = estaConcluido(b);
+        if (aConcluido !== bConcluido) return aConcluido ? 1 : -1;
+
+        const ordemCronologica =
+            (a.data || "").localeCompare(b.data || "") ||
+            (a.horario || "").localeCompare(b.horario || "");
+        return aConcluido ? -ordemCronologica : ordemCronologica;
+    });
+    const agendamentosFiltrados = historico.filter((agendamento) => {
+        const concluido = estaConcluido(agendamento);
         return (mostrarConcluidos && concluido) || (mostrarFuturos && !concluido);
     });
 
@@ -72,7 +81,7 @@ export default function HistoricoDashboard() {
         <section className="space-y-6">
             <header>
                 <h2 className="text-xl font-bold tracking-tight">Histórico de agendamentos</h2>
-                <p className="mt-1 text-sm text-info">Agendamentos mais recentes aparecem primeiro.</p>
+                <p className="mt-1 text-sm text-info">Próximos horários aparecem primeiro; concluídos seguem do mais recente ao mais antigo.</p>
             </header>
 
             <fieldset className="flex flex-wrap gap-x-6 gap-y-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
