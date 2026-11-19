@@ -184,7 +184,7 @@ export default function ResumoDashboard() {
                                 {resumoHoje.qtd} de {resumoHoje.qtdTotal} {resumoHoje.qtdTotal === 1 ? "atendimento concluído" : "atendimentos concluídos"}
                             </p>
                             <p className="mt-1 text-xs font-medium text-emerald-900">
-                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoHoje.minutosTrabalhados)}/{formatarHorasTrabalhadas(resumoHoje.minutosPrevistos)}
+                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoHoje.minutosTrabalhados)} / {formatarHorasTrabalhadas(resumoHoje.minutosPrevistos)}
                             </p>
                         </div>
                         <div className="mt-5 flex justify-between border-t border-emerald-300 pt-3 text-xs text-info">
@@ -205,7 +205,7 @@ export default function ResumoDashboard() {
                                 {resumoSemana.qtd} {resumoSemana.qtd === 1 ? "atendimento concluído" : "atendimentos concluídos"}
                             </p>
                             <p className="mt-1 text-xs font-medium text-sky-900">
-                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoSemana.minutosTrabalhados)}/{formatarHorasTrabalhadas(resumoSemana.minutosPrevistos)}
+                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoSemana.minutosTrabalhados)} / {formatarHorasTrabalhadas(resumoSemana.minutosPrevistos)}
                             </p>
                         </div>
                         <div className="mt-5 flex justify-between border-t border-sky-300 pt-3 text-xs text-info">
@@ -226,7 +226,7 @@ export default function ResumoDashboard() {
                                 {resumoMes.qtd} {resumoMes.qtd === 1 ? "atendimento concluído" : "atendimentos concluídos"}
                             </p>
                             <p className="mt-1 text-xs font-medium text-violet-900">
-                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoMes.minutosTrabalhados)}/{formatarHorasTrabalhadas(resumoMes.minutosPrevistos)}
+                                Horas trabalhadas: {formatarHorasTrabalhadas(resumoMes.minutosTrabalhados)} / {formatarHorasTrabalhadas(resumoMes.minutosPrevistos)}
                             </p>
                         </div>
                         <div className="mt-5 flex justify-between border-t border-violet-300 pt-3 text-xs text-info">

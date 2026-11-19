@@ -85,6 +85,13 @@ export default function LinhaTempoDashboard() {
         (total, agendamento) => total + agendamento.duracao,
         0
     );
+    const intervalosDoDia = atendimentosDoDia
+        .slice(1)
+        .map((agendamento, indice) => ({
+            inicio: atendimentosDoDia[indice].fim,
+            fim: agendamento.inicio,
+        }))
+        .filter((intervalo) => intervalo.fim > intervalo.inicio);
 
     return (
         <section className="space-y-6">
@@ -118,6 +125,10 @@ export default function LinhaTempoDashboard() {
                     <aside className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                         <p className="text-sm font-medium text-info">Horas previstas no dia</p>
                         <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosPrevistos)}</p>
+                        <div className="mt-4 border-t border-emerald-200 pt-3">
+                            <p className="text-sm font-semibold text-tertiary">Horários de intervalo:</p>
+                            <p className="mt-1 text-sm text-info">Nenhum intervalo previsto.</p>
+                        </div>
                     </aside>
                 </>
             ) : (
@@ -174,6 +185,20 @@ export default function LinhaTempoDashboard() {
                             <div>
                                 <p className="text-sm font-medium text-info">Horas previstas no dia</p>
                                 <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosPrevistos)}</p>
+                            </div>
+                            <div className="border-t border-stone-200 pt-3 sm:col-span-2">
+                                <p className="text-sm font-semibold text-tertiary">Horários de intervalo:</p>
+                                {intervalosDoDia.length === 0 ? (
+                                    <p className="mt-1 text-sm text-info">Nenhum intervalo previsto.</p>
+                                ) : (
+                                    <ol className="mt-1 space-y-1 text-sm text-info">
+                                        {intervalosDoDia.map((intervalo, indice) => (
+                                            <li key={`${intervalo.inicio}-${intervalo.fim}`}>
+                                                {indice + 1}º - {formatarHorarioDescanso(intervalo.inicio)}m às {formatarHorarioDescanso(intervalo.fim)}m
+                                            </li>
+                                        ))}
+                                    </ol>
+                                )}
                             </div>
                         </div>
                     </aside>

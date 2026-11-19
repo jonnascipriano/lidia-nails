@@ -8,11 +8,11 @@ Em dispositivos móveis, instale o app pela tela de acesso ou no painel. Ele abr
 1. No Firebase Console do projeto, habilite **Authentication → E-mail/senha**.
 2. Crie a conta da dona em **Authentication → Users → Add user**. Não há cadastro público de contas.
 3. Crie o banco em **Firestore Database**.
-4. Publique as regras de [`firestore.rules`](./firestore.rules) no Firestore (aba **Rules**). As leituras e gravações de agendamentos, configurações e gastos exigem autenticação.
+4. Publique as regras de [`firestore.rules`](./firestore.rules) no Firestore (aba **Rules**). As leituras e gravações de agendamentos, configurações e gastos exigem autenticação; as preferências visuais são restritas ao usuário autenticado.
 5. Copie `.env.example` para `.env.local` e preencha as credenciais do app Web em **Project settings → Your apps**.
 6. Configure as mesmas variáveis `VITE_FIREBASE_*` no ambiente usado para gerar a versão de produção.
 
-O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos e gastos são sincronizados em tempo real com as coleções `agendamentos` e `gastos` do Firestore; as configurações de agenda são sincronizadas pelo documento `configuracoes/agenda`. O painel abre no resumo em `/admin` ou `/admin/resumo`; as abas estão disponíveis em `/admin/agendar`, `/admin/agenda`, `/admin/gastos`, `/admin/historico` e `/admin/linha-do-tempo`. `/dashboard` continua levando ao resumo. Na primeira entrada autenticada em cada navegador, dados antigos de agendamentos e configurações salvos em `localStorage` são importados e removidos após a confirmação da gravação no Firestore.
+O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos e gastos são sincronizados em tempo real com as coleções `agendamentos` e `gastos` do Firestore; as configurações de agenda são sincronizadas pelo documento `configuracoes/agenda`, e a preferência de tema é salva em `preferenciasUsuarios/{uid}`. O painel abre no resumo em `/admin` ou `/admin/resumo`; as abas estão disponíveis em `/admin/agendar`, `/admin/agenda`, `/admin/gastos`, `/admin/historico` e `/admin/linha-do-tempo`. `/dashboard` continua levando ao resumo. Na primeira entrada autenticada em cada navegador, dados antigos de agendamentos e configurações salvos em `localStorage` são importados e removidos após a confirmação da gravação no Firestore.
 
 ## Publicação no domínio HostGator
 

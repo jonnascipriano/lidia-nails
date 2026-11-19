@@ -34,6 +34,10 @@ export default function AdminArea() {
     const [erroMigracao, setErroMigracao] = useState("");
     const [tentativaMigracao, setTentativaMigracao] = useState(0);
     const [mostrarVoltarAoTopo, setMostrarVoltarAoTopo] = useState(false);
+    const [modoEscuro, setModoEscuro] = useState(false);
+    const [carregandoPreferenciaTema, setCarregandoPreferenciaTema] = useState(true);
+    const [salvandoPreferenciaTema, setSalvandoPreferenciaTema] = useState(false);
+    const [erroPreferenciaTema, setErroPreferenciaTema] = useState("");
 
     useEffect(() => {
         const atualizarVisibilidade = () => setMostrarVoltarAoTopo(window.scrollY > 320);
@@ -47,6 +51,9 @@ export default function AdminArea() {
         (usuarioAtual) => {
             setUsuario(usuarioAtual);
             setCarregandoAuth(false);
+            setModoEscuro(false);
+            setCarregandoPreferenciaTema(Boolean(usuarioAtual));
+            setErroPreferenciaTema("");
         },
         (erro) => {
             setErroMigracao(`Não foi possível verificar a autenticação: ${erro.message}`);
@@ -54,6 +61,52 @@ export default function AdminArea() {
             setEstadoMigracao("error");
         }
     ), []);
+
+    useEffect(() => {
+        if (!usuario?.uid) return undefined;
+
+        let cancelado = false;
+        let pararDeObservar;
+        import("./preferenciasFirebase")
+            .then(({ observarPreferenciaTema }) => {
+                if (cancelado) return;
+                pararDeObservar = observarPreferenciaTema(
+                    usuario.uid,
+                    (preferencia) => {
+                        setModoEscuro(preferencia);
+                        setCarregandoPreferenciaTema(false);
+                        setErroPreferenciaTema("");
+                    },
+                    (erro) => {
+                        setErroPreferenciaTema(`Não foi possível carregar a preferência de tema: ${erro.message}`);
+                        setCarregandoPreferenciaTema(false);
+                    }
+                );
+            })
+            .catch((erro) => {
+                if (cancelado) return;
+                setErroPreferenciaTema(`Não foi possível carregar a preferência de tema: ${erro.message}`);
+                setCarregandoPreferenciaTema(false);
+            });
+
+        return () => {
+            cancelado = true;
+            pararDeObservar?.();
+        };
+    }, [usuario?.uid]);
+
+    useEffect(() => {
+        const raiz = document.documentElement;
+        if (modoEscuro) {
+            raiz.dataset.theme = "dark";
+        } else {
+            raiz.removeAttribute("data-theme");
+        }
+    }, [modoEscuro]);
+
+    useEffect(() => () => {
+        document.documentElement.removeAttribute("data-theme");
+    }, []);
 
     useEffect(() => {
         if (!usuario) return undefined;
@@ -85,6 +138,24 @@ export default function AdminArea() {
             await signOut(auth);
         } catch (erro) {
             alert(`Não foi possível sair da conta: ${erro.message}`);
+        }
+    };
+
+    const alternarTema = async () => {
+        if (!usuario || salvandoPreferenciaTema || carregandoPreferenciaTema) return;
+
+        const proximoModoEscuro = !modoEscuro;
+        setModoEscuro(proximoModoEscuro);
+        setSalvandoPreferenciaTema(true);
+        setErroPreferenciaTema("");
+        try {
+            const { salvarPreferenciaTema } = await import("./preferenciasFirebase");
+            await salvarPreferenciaTema(usuario.uid, proximoModoEscuro);
+        } catch (erro) {
+            setModoEscuro(!proximoModoEscuro);
+            setErroPreferenciaTema(`Não foi possível salvar a preferência de tema: ${erro.message}`);
+        } finally {
+            setSalvandoPreferenciaTema(false);
         }
     };
 
@@ -133,8 +204,19 @@ export default function AdminArea() {
                         <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Painel de gestão</h1>
                         <p className="mt-1 text-sm text-info">Olá, Lídia. Organize seu dia por aqui.</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <InstallAppButton />
+                        <button
+                            type="button"
+                            onClick={alternarTema}
+                            disabled={carregandoPreferenciaTema || salvandoPreferenciaTema}
+                            aria-pressed={modoEscuro}
+                            className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-tertiary transition hover:border-destaque hover:text-destaque disabled:cursor-wait disabled:opacity-60"
+                        >
+                            {carregandoPreferenciaTema
+                                ? "Carregando tema..."
+                                : modoEscuro ? "☀️ Modo claro" : "🌙 Modo escuro"}
+                        </button>
                         <button
                             type="button"
                             onClick={sair}
@@ -144,6 +226,12 @@ export default function AdminArea() {
                         </button>
                     </div>
                 </header>
+
+                {erroPreferenciaTema && (
+                    <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {erroPreferenciaTema}
+                    </p>
+                )}
 
                 <nav
                     aria-label="Seções do painel"
