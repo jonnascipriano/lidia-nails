@@ -1,1 +1,0 @@
-import{a as e,o as t,t as n,u as r}from"./firebaseFirestore-CMWKaslm.js";var i=e=>r(n,`preferenciasUsuarios`,e),a=(t,n,r)=>e(i(t),e=>n(e.exists()&&e.data().modoEscuro===!0),r),o=(e,n)=>t(i(e),{modoEscuro:n},{merge:!0});export{a as observarPreferenciaTema,o as salvarPreferenciaTema};
