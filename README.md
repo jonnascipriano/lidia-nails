@@ -1,6 +1,6 @@
 # Lídia Nails
 
-Aplicação de painel administrativo para gerenciar serviços, agenda e faturamento. Após entrar, o **Resumo** financeiro é exibido primeiro. As abas **Agendar**, **Agenda Admin**, **Resumo**, **Gastos**, **Histórico** e **Linha do tempo** organizam as demais funções.
+Aplicação de painel administrativo para gerenciar serviços, agenda e faturamento. Após entrar, o **Resumo** financeiro é exibido primeiro. As abas **Agendar**, **Resumo**, **Gastos**, **Histórico** e **Lista de Agendamentos** organizam as demais funções.
 Em dispositivos móveis, instale o app pela tela de acesso ou no painel. Ele abre diretamente na rota administrativa, que solicita login se necessário, e mantém a sessão após fechar e reabrir o app.
 
 ## Configuração do Firebase
@@ -12,7 +12,7 @@ Em dispositivos móveis, instale o app pela tela de acesso ou no painel. Ele abr
 5. Copie `.env.example` para `.env.local` e preencha as credenciais do app Web em **Project settings → Your apps**.
 6. Configure as mesmas variáveis `VITE_FIREBASE_*` no ambiente usado para gerar a versão de produção.
 
-O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos e gastos são sincronizados em tempo real com as coleções `agendamentos` e `gastos` do Firestore; as configurações de agenda são sincronizadas pelo documento `configuracoes/agenda`, e a preferência de tema é salva em `preferenciasUsuarios/{uid}`. O painel abre no resumo em `/admin` ou `/admin/resumo`; as abas estão disponíveis em `/admin/agendar`, `/admin/agenda`, `/admin/gastos`, `/admin/historico` e `/admin/linha-do-tempo`. `/dashboard` continua levando ao resumo. Na primeira entrada autenticada em cada navegador, dados antigos de agendamentos e configurações salvos em `localStorage` são importados e removidos após a confirmação da gravação no Firestore.
+O acesso a `/admin` e `/dashboard` requer autenticação. Os agendamentos e gastos são sincronizados em tempo real com as coleções `agendamentos` e `gastos` do Firestore; as configurações de agenda são sincronizadas pelo documento `configuracoes/agenda`, e a preferência de tema é salva em `preferenciasUsuarios/{uid}`. O painel abre no resumo em `/admin` ou `/admin/resumo`; as abas estão disponíveis em `/admin/agendar`, `/admin/gastos`, `/admin/historico` e `/admin/linha-do-tempo` (Lista de Agendamentos). `/dashboard` continua levando ao resumo. Na primeira entrada autenticada em cada navegador, dados antigos de agendamentos e configurações salvos em `localStorage` são importados e removidos após a confirmação da gravação no Firestore.
 
 ## Publicação no domínio HostGator
 

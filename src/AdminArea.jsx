@@ -13,11 +13,10 @@ const LinhaTempoDashboard = lazy(() => import("./LinhaTempoDashboard"));
 
 const abas = [
     { id: "agendar", rotulo: "Agendar", caminho: "/admin/agendar" },
-    { id: "agenda", rotulo: "Agenda Admin", caminho: "/admin/agenda" },
     { id: "resumo", rotulo: "Resumo", caminho: "/admin/resumo" },
     { id: "gastos", rotulo: "Gastos", caminho: "/admin/gastos" },
     { id: "historico", rotulo: "Histórico", caminho: "/admin/historico" },
-    { id: "linha-do-tempo", rotulo: "Linha do tempo", caminho: "/admin/linha-do-tempo" },
+    { id: "linha-do-tempo", rotulo: "Lista de Agendamentos", caminho: "/admin/linha-do-tempo" },
 ];
 
 const carregando = (
@@ -254,8 +253,8 @@ export default function AdminArea() {
                 </nav>
 
                 <Suspense fallback={carregando}>
-                    {abaAtiva === "agendar" || abaAtiva === "agenda" ? (
-                        <AdminDashboard activeTab={abaAtiva} />
+                    {abaAtiva === "agendar" ? (
+                        <AdminDashboard activeTab="agendar" />
                     ) : abaAtiva === "resumo" ? (
                         <ResumoDashboard />
                     ) : abaAtiva === "gastos" ? (

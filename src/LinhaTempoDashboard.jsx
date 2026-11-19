@@ -9,6 +9,13 @@ const obterDataLocal = () => {
     return `${ano}-${mes}-${dia}`;
 };
 
+const obterDataISO = (data) => {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    const dia = String(data.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+};
+
 const converterParaMinutos = (horario) => {
     if (typeof horario !== "string") return null;
     const [horas, minutos] = horario.split(":").map(Number);
@@ -67,6 +74,24 @@ export default function LinhaTempoDashboard() {
         }
     ), []);
 
+    const diasProximos = Array.from({ length: 14 }, (_, indice) => {
+        const dia = new Date();
+        dia.setHours(12, 0, 0, 0);
+        dia.setDate(dia.getDate() + indice);
+        const valor = obterDataISO(dia);
+
+        return {
+            valor,
+            rotulo: indice === 0
+                ? "Hoje"
+                : indice === 1
+                    ? "Amanhã"
+                    : dia.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+            data: dia.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+            quantidadeAgendamentos: agendamentos.filter((agendamento) => agendamento.data === valor).length,
+        };
+    });
+
     const atendimentosDoDia = agendamentos
         .filter((agendamento) => agendamento.data === data)
         .map((agendamento) => {
@@ -97,19 +122,50 @@ export default function LinhaTempoDashboard() {
         <section className="space-y-6">
             <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h2 className="text-xl font-bold tracking-tight">Linha do tempo</h2>
+                    <h2 className="text-xl font-bold tracking-tight">Lista de Agendamentos</h2>
                     <p className="mt-1 text-sm text-info">Horários de início, términos previstos e intervalos do dia.</p>
                 </div>
                 <label className="text-sm font-medium">
-                    Dia da agenda
+                    Outra data
                     <input
                         type="date"
                         value={data}
                         onChange={(event) => setData(event.target.value)}
+                        aria-label="Escolher outra data"
                         className="mt-1 block rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 outline-none focus:border-destaque focus:ring-4 focus:ring-destaque/10"
                     />
                 </label>
             </header>
+
+            <div>
+                <p className="mb-3 text-sm font-bold text-tertiary">Escolha um dia</p>
+                <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-2" role="group" aria-label="Dias com agendamentos">
+                    {diasProximos.map((dia) => {
+                        const selecionado = data === dia.valor;
+                        return (
+                            <button
+                                key={dia.valor}
+                                type="button"
+                                onClick={() => setData(dia.valor)}
+                                aria-pressed={selecionado}
+                                className={`flex min-h-[74px] min-w-[76px] shrink-0 flex-col items-center justify-center rounded-xl border px-2 py-2 text-center transition ${
+                                    selecionado
+                                        ? "border-destaque bg-rose-50 text-rose-900"
+                                        : "border-gray-200 bg-white text-tertiary hover:border-destaque/50"
+                                }`}
+                            >
+                                <span className="text-xs font-medium uppercase">{dia.rotulo}</span>
+                                <span className="mt-0.5 text-sm font-semibold">{dia.data}</span>
+                                {dia.quantidadeAgendamentos > 0 && (
+                                    <span className="mt-1 whitespace-nowrap text-[10px] font-semibold leading-tight text-destaque">
+                                        {dia.quantidadeAgendamentos} agend.
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
 
             {erro ? (
                 <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{erro}</p>
