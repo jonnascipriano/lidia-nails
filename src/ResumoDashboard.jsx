@@ -154,27 +154,27 @@ export default function ResumoDashboard() {
                 {/* Cards de Métricas */}
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {/* Resumo Hoje */}
-                    <div className="flex flex-col justify-between rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5">
+                    <div className="flex flex-col justify-between rounded-2xl border border-emerald-300 bg-emerald-100 p-5 shadow-sm">
                         <div>
-                            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
+                            <span className="rounded-full bg-emerald-200 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-900">
                                 Hoje
                             </span>
                             <p className="mt-4 text-sm text-info">Faturamento realizado</p>
-                            <h3 className="mt-1 text-2xl font-bold text-emerald-800">{formatarMoeda(resumoHoje.valor)}</h3>
+                            <h3 className="mt-1 text-2xl font-bold text-emerald-900">{formatarMoeda(resumoHoje.valor)}</h3>
                             <p className="mt-2 text-xs text-info">
                                 {resumoHoje.qtd} de {resumoHoje.qtdTotal} {resumoHoje.qtdTotal === 1 ? "atendimento concluído" : "atendimentos concluídos"}
                             </p>
                         </div>
-                        <div className="mt-5 flex justify-between border-t border-emerald-200 pt-3 text-xs text-info">
+                        <div className="mt-5 flex justify-between border-t border-emerald-300 pt-3 text-xs text-info">
                             <span>Previsão total hoje</span>
                             <strong className="text-tertiary">{formatarMoeda(resumoHoje.valorTotal)}</strong>
                         </div>
                     </div>
 
                     {/* Resumo da Semana */}
-                    <div className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col justify-between rounded-2xl border border-sky-300 bg-sky-100 p-5 shadow-sm">
                         <div>
-                            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-800">
+                            <span className="rounded-full bg-sky-200 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-900">
                                 Esta semana
                             </span>
                             <p className="mt-4 text-sm text-info">Faturamento realizado</p>
@@ -183,16 +183,16 @@ export default function ResumoDashboard() {
                                 {resumoSemana.qtd} {resumoSemana.qtd === 1 ? "atendimento realizado" : "atendimentos realizados"}
                             </p>
                         </div>
-                        <div className="mt-5 flex justify-between border-t border-stone-100 pt-3 text-xs text-info">
+                        <div className="mt-5 flex justify-between border-t border-sky-300 pt-3 text-xs text-info">
                             <span>Previsão total</span>
                             <strong className="text-destaque">{formatarMoeda(resumoSemana.valorTotal)}</strong>
                         </div>
                     </div>
 
                     {/* Resumo do Mês */}
-                    <div className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col justify-between rounded-2xl border border-violet-300 bg-violet-100 p-5 shadow-sm">
                         <div>
-                            <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-destaque">
+                            <span className="rounded-full bg-violet-200 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet-900">
                                 Este mês
                             </span>
                             <p className="mt-4 text-sm text-info">Faturamento realizado</p>
@@ -201,15 +201,15 @@ export default function ResumoDashboard() {
                                 {resumoMes.qtd} {resumoMes.qtd === 1 ? "atendimento realizado" : "atendimentos realizados"}
                             </p>
                         </div>
-                        <div className="mt-5 flex justify-between border-t border-stone-100 pt-3 text-xs text-info">
+                        <div className="mt-5 flex justify-between border-t border-violet-300 pt-3 text-xs text-info">
                             <span>Previsão total</span>
                             <strong className="text-destaque">{formatarMoeda(resumoMes.valorTotal)}</strong>
                         </div>
                     </div>
 
-                    <div className="flex flex-col justify-between rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
+                    <div className="flex flex-col justify-between rounded-2xl border border-rose-300 bg-rose-100 p-5 shadow-sm">
                         <div>
-                            <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-rose-800">
+                            <span className="rounded-full bg-rose-200 px-3 py-1 text-xs font-bold uppercase tracking-wider text-rose-900">
                                 Saldo do mês
                             </span>
                             <p className="mt-4 text-sm text-info">Realizado menos gastos</p>

@@ -23,6 +23,20 @@ const formatarHorario = (totalMinutos) => {
     return `${hora}:${minuto}`;
 };
 
+const formatarHorarioDescanso = (totalMinutos) => {
+    const minutosNoDia = ((totalMinutos % 1440) + 1440) % 1440;
+    const hora = String(Math.floor(minutosNoDia / 60)).padStart(2, "0");
+    const minuto = String(minutosNoDia % 60).padStart(2, "0");
+    return `${hora}h${minuto}`;
+};
+
+const formatarDuracaoDescanso = (minutos) => {
+    const horas = Math.floor(minutos / 60);
+    const restoMinutos = minutos % 60;
+    if (!horas) return `${restoMinutos}min`;
+    return restoMinutos ? `${horas}h ${restoMinutos}min` : `${horas}h`;
+};
+
 const formatarDuracao = (minutos) => {
     const horas = Math.floor(minutos / 60);
     const restoMinutos = minutos % 60;
@@ -105,7 +119,7 @@ export default function LinhaTempoDashboard() {
                                     {atendimentoAnterior && (
                                         <div className="ml-5 border-l-2 border-dashed border-stone-300 py-3 pl-5 text-sm text-info">
                                             {intervalo > 0
-                                                ? `Descanso entre atendimentos: ${formatarDuracao(intervalo)}`
+                                                ? `Descanso entre atendimentos: ${formatarDuracaoDescanso(intervalo)}, de ${formatarHorarioDescanso(atendimentoAnterior.fim)} às ${formatarHorarioDescanso(agendamento.inicio)}m`
                                                 : intervalo === 0
                                                     ? "Sem intervalo entre atendimentos"
                                                     : `Sobreposição de ${formatarDuracao(Math.abs(intervalo))}`}
