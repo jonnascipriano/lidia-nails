@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { calcularHorarioTermino } from "./horarios";
 import { observarAgendamentos } from "./agendamentosFirebase";
 import { observarGastos } from "./gastosFirebase";
 
@@ -20,7 +19,6 @@ export default function ResumoDashboard() {
     const [resumoHoje, setResumoHoje] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
     const [resumoSemana, setResumoSemana] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
     const [resumoMes, setResumoMes] = useState({ qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 });
-    const [agendamentosPorDia, setAgendamentosPorDia] = useState({});
     const [erroAgendamentos, setErroAgendamentos] = useState("");
     const [agendamentos, setAgendamentos] = useState([]);
     const [gastos, setGastos] = useState([]);
@@ -51,11 +49,6 @@ export default function ResumoDashboard() {
 
     useEffect(() => {
         const atualizarResumo = () => {
-            const agendamentosOrdenados = [...agendamentos].sort((a, b) => {
-                if (a.data === b.data) return a.horario.localeCompare(b.horario);
-                return a.data.localeCompare(b.data);
-            });
-
             const hoje = new Date();
             const ano = hoje.getFullYear();
             const mes = String(hoje.getMonth() + 1).padStart(2, "0");
@@ -87,15 +80,7 @@ export default function ResumoDashboard() {
             let calcSemana = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 };
             let calcMes = { qtd: 0, valor: 0, qtdTotal: 0, valorTotal: 0 };
 
-            const grupos = {};
-
-            agendamentosOrdenados.forEach((ag) => {
-                // Agrupamento de agendamentos por data
-                if (!grupos[ag.data]) {
-                    grupos[ag.data] = [];
-                }
-                grupos[ag.data].push(ag);
-
+            agendamentos.forEach((ag) => {
                 const valorNumerico = Number(ag.valor) || 0;
 
                 // Verificação se o horário de HOJE já passou
@@ -145,16 +130,12 @@ export default function ResumoDashboard() {
             setResumoHoje(calcHoje);
             setResumoSemana(calcSemana);
             setResumoMes(calcMes);
-            setAgendamentosPorDia(grupos);
         };
 
         atualizarResumo();
         const intervalo = setInterval(atualizarResumo, 60 * 1000);
         return () => clearInterval(intervalo);
     }, [agendamentos]);
-
-    const datasOrdenadas = Object.keys(agendamentosPorDia).sort();
-    const hojeISO = obterDataLocal();
 
     return (
         <section className="space-y-6">
@@ -165,6 +146,9 @@ export default function ResumoDashboard() {
 
             {erroGastos && (
                 <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{erroGastos}</p>
+            )}
+            {erroAgendamentos && (
+                <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{erroAgendamentos}</p>
             )}
 
                 {/* Cards de Métricas */}
@@ -237,71 +221,6 @@ export default function ResumoDashboard() {
                     </div>
                 </div>
 
-                {/* Lista de Agendamentos por Dia */}
-                <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
-                    <h2 className="mb-6 text-xl font-bold text-tertiary">Histórico e Próximos Agendamentos</h2>
-
-                    {erroAgendamentos ? (
-                        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                            {erroAgendamentos}
-                        </div>
-                    ) : datasOrdenadas.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
-                            Nenhum agendamento registrado no sistema.
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-8">
-                            {datasOrdenadas.map((dataGrupo) => {
-                                const dataFormatada = dataGrupo.split("-").reverse().join("/");
-                                const isHoje = dataGrupo === hojeISO;
-                                const listaDoDia = agendamentosPorDia[dataGrupo];
-
-                                return (
-                                    <div key={dataGrupo}>
-                                        <div className="mb-4 flex items-center gap-3 border-b border-gray-100 pb-2">
-                                            <h3 className="text-lg font-bold text-tertiary">{dataFormatada}</h3>
-                                            {isHoje && (
-                                                <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
-                                                    HOJE
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                            {listaDoDia.map((ag, idx) => (
-                                                <div
-                                                    key={`${dataGrupo}-${idx}`}
-                                                    className="flex flex-col justify-between gap-3 rounded-2xl border border-gray-200 bg-primary p-4 transition hover:border-destaque/40"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="rounded-md bg-destaque px-2.5 py-1 text-xs font-bold text-white">
-                                                            Início: {ag.horario}
-                                                        </span>
-                                                        <span className="text-xs font-semibold text-gray-500">
-                                                            {ag.duracao ? `${ag.duracao} min` : "15 min"}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs font-medium text-gray-500">
-                                                        Término previsto: {calcularHorarioTermino(ag.horario, Number(ag.duracao) || 15) || "—"}
-                                                    </p>
-
-                                                    <div>
-                                                        <h4 className="text-base font-bold text-tertiary">{ag.nomeCliente}</h4>
-                                                        <p className="text-sm text-gray-600">{ag.servico}</p>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between border-t border-gray-200/60 pt-2 text-sm font-bold text-green-600">
-                                                        <span>R$ {ag.valor}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
         </section>
     );
 }

@@ -1,11 +1,11 @@
 {
     "name": "Painel Lídia Nails",
     "short_name": "Painel Lídia",
-    "start_url": "/lidia-nails/#/admin",
-    "scope": "/lidia-nails/",
+    "start_url": "/#/admin",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#ff007f",
+    "theme_color": "#C45F7D",
     "icons": [
         {
             "src": "./android-chrome-192x192.png",

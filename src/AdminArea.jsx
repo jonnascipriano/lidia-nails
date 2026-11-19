@@ -8,12 +8,16 @@ import InstallAppButton from "./InstallAppButton";
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
 const ResumoDashboard = lazy(() => import("./ResumoDashboard"));
 const GastosDashboard = lazy(() => import("./GastosDashboard"));
+const HistoricoDashboard = lazy(() => import("./HistoricoDashboard"));
+const LinhaTempoDashboard = lazy(() => import("./LinhaTempoDashboard"));
 
 const abas = [
-    { id: "agendar", rotulo: "Agendar", caminho: "/admin" },
+    { id: "agendar", rotulo: "Agendar", caminho: "/admin/agendar" },
     { id: "agenda", rotulo: "Agenda Admin", caminho: "/admin/agenda" },
     { id: "resumo", rotulo: "Resumo", caminho: "/admin/resumo" },
     { id: "gastos", rotulo: "Gastos", caminho: "/admin/gastos" },
+    { id: "historico", rotulo: "Histórico", caminho: "/admin/historico" },
+    { id: "linha-do-tempo", rotulo: "Linha do tempo", caminho: "/admin/linha-do-tempo" },
 ];
 
 const carregando = (
@@ -29,6 +33,14 @@ export default function AdminArea() {
     const [estadoMigracao, setEstadoMigracao] = useState("idle");
     const [erroMigracao, setErroMigracao] = useState("");
     const [tentativaMigracao, setTentativaMigracao] = useState(0);
+    const [mostrarVoltarAoTopo, setMostrarVoltarAoTopo] = useState(false);
+
+    useEffect(() => {
+        const atualizarVisibilidade = () => setMostrarVoltarAoTopo(window.scrollY > 320);
+        window.addEventListener("scroll", atualizarVisibilidade, { passive: true });
+        atualizarVisibilidade();
+        return () => window.removeEventListener("scroll", atualizarVisibilidade);
+    }, []);
 
     useEffect(() => onAuthStateChanged(
         auth,
@@ -110,7 +122,7 @@ export default function AdminArea() {
 
     const abaAtiva = location.pathname === "/dashboard"
         ? "resumo"
-        : abas.find((aba) => aba.caminho === location.pathname)?.id || "agendar";
+        : abas.find((aba) => aba.caminho === location.pathname)?.id || "resumo";
 
     return (
         <main className="min-h-screen bg-primary text-tertiary">
@@ -158,11 +170,26 @@ export default function AdminArea() {
                         <AdminDashboard activeTab={abaAtiva} />
                     ) : abaAtiva === "resumo" ? (
                         <ResumoDashboard />
-                    ) : (
+                    ) : abaAtiva === "gastos" ? (
                         <GastosDashboard />
+                    ) : abaAtiva === "historico" ? (
+                        <HistoricoDashboard />
+                    ) : (
+                        <LinhaTempoDashboard />
                     )}
                 </Suspense>
             </div>
+            {mostrarVoltarAoTopo && (
+                <button
+                    type="button"
+                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                    aria-label="Voltar ao topo"
+                    title="Voltar ao topo"
+                    className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-destaque text-2xl font-bold text-white shadow-lg transition hover:scale-105 hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-destaque/30"
+                >
+                    ↑
+                </button>
+            )}
         </main>
     );
 }

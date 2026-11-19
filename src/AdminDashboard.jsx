@@ -65,9 +65,9 @@ export default function AdminDashboard({ activeTab }) {
     const [nomeClienteManual, setNomeClienteManual] = useState("");
     const [dataManual, setDataManual] = useState(() => obterDataISO(new Date()));
     const [horarioManual, setHorarioManual] = useState("");
-    const [servicoManual, setServicoManual] = useState(servicos[0].nome);
-    const [valorManual, setValorManual] = useState(String(servicos[0].valor));
-    const [duracaoManual, setDuracaoManual] = useState(String(servicos[0].tempoEstimado));
+    const [servicoManual, setServicoManual] = useState("");
+    const [valorManual, setValorManual] = useState("");
+    const [duracaoManual, setDuracaoManual] = useState("");
     const [mensagemCadastroManual, setMensagemCadastroManual] = useState("");
     const [agendamentos, setAgendamentos] = useState([]);
     const [carregandoAgendamentos, setCarregandoAgendamentos] = useState(true);
@@ -290,6 +290,10 @@ export default function AdminDashboard({ activeTab }) {
             return inicioNovoAgendamento < fimAgendado && fimNovoAgendamento > inicioAgendado;
         });
 
+        if (!servicoManual) {
+            alert("Selecione um serviço antes de escolher o horário.");
+            return;
+        }
         if (!nomeClienteManual.trim() || !dataManual || !horarioManual) {
             alert("Informe o nome, a data e o horário do atendimento.");
             return;
@@ -340,6 +344,14 @@ export default function AdminDashboard({ activeTab }) {
     };
 
     const selecionarServicoManual = (nomeServico) => {
+        if (!nomeServico) {
+            setServicoManual("");
+            setValorManual("");
+            setDuracaoManual("");
+            setHorarioManual("");
+            return;
+        }
+
         const servicoSelecionado = servicos.find((servico) => servico.nome === nomeServico);
         if (!servicoSelecionado) return;
 
@@ -406,7 +418,7 @@ export default function AdminDashboard({ activeTab }) {
     return (
         <section className="space-y-6">
             <div className="mx-auto max-w-7xl">
-                {activeTab === "agenda" && (
+                {activeTab === "agenda-configuracoes" && (
                 <details className="group mb-8 rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm">
                     <summary className="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -640,6 +652,11 @@ export default function AdminDashboard({ activeTab }) {
                             Agende um novo atendimento ou registre um atendimento anterior. Os horários futuros seguem a disponibilidade da agenda.
                         </p>
                     </div>
+                    {erroConfiguracao && (
+                        <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {erroConfiguracao}
+                        </p>
+                    )}
                     <form onSubmit={adicionarAgendamentoManual} className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <label className="block min-w-0 text-sm font-medium text-gray-700">
                             Nome da cliente
@@ -671,8 +688,10 @@ export default function AdminDashboard({ activeTab }) {
                             <select
                                 value={servicoManual}
                                 onChange={(event) => selecionarServicoManual(event.target.value)}
+                                required
                                 className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
                             >
+                                <option value="">Selecione um serviço</option>
                                 {servicos.map((servico) => (
                                     <option key={servico.nome} value={servico.nome}>{servico.nome}</option>
                                 ))}
@@ -724,51 +743,73 @@ export default function AdminDashboard({ activeTab }) {
                                             })}
                                         </div>
                                     </div>
-                                    <p className="mb-2 text-sm font-medium text-gray-700">Horários disponíveis</p>
-                                    {diasFechados.includes(dataManual) ? (
-                                        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                                            O salão está fechado nesta data.
-                                        </div>
-                                    ) : horariosDisponiveisManuais.length === 0 ? (
-                                        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700">
-                                            Nenhum horário disponível para essa data.
-                                        </div>
+                                    {!servicoManual ? (
+                                        <p className="rounded-xl bg-primary p-4 text-sm text-info">
+                                            Selecione um serviço para ver os horários disponíveis.
+                                        </p>
+                                    ) : carregandoConfiguracao ? (
+                                        <p className="rounded-xl bg-primary p-4 text-sm text-info">
+                                            Carregando horários disponíveis...
+                                        </p>
+                                    ) : erroConfiguracao ? (
+                                        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                                            Não é possível consultar os horários enquanto a configuração da agenda não carregar.
+                                        </p>
                                     ) : (
-                                        <div className="grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] gap-2" role="group" aria-label="Horários disponíveis">
-                                            {horariosDisponiveisManuais.map((horario) => (
-                                                <button
-                                                    key={horario}
-                                                    type="button"
-                                                    onClick={() => setHorarioManual(horario)}
-                                                    aria-pressed={horarioManual === horario}
-                                                    className={`w-full rounded-xl border px-2 py-2 text-sm font-medium transition ${
-                                                        horarioManual === horario
-                                                            ? "border-destaque bg-destaque text-white"
-                                                            : "border-destaque/30 bg-primary text-tertiary hover:bg-secondary"
-                                                    }`}
-                                                >
-                                                    {horario}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <>
+                                            <p className="mb-2 text-sm font-medium text-gray-700">Horários disponíveis</p>
+                                            {diasFechados.includes(dataManual) ? (
+                                                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                                                    O salão está fechado nesta data.
+                                                </div>
+                                            ) : horariosDisponiveisManuais.length === 0 ? (
+                                                <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700">
+                                                    Nenhum horário disponível para essa data.
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] gap-2" role="group" aria-label="Horários disponíveis">
+                                                    {horariosDisponiveisManuais.map((horario) => (
+                                                        <button
+                                                            key={horario}
+                                                            type="button"
+                                                            onClick={() => setHorarioManual(horario)}
+                                                            aria-pressed={horarioManual === horario}
+                                                            className={`w-full rounded-xl border px-2 py-2 text-sm font-medium transition ${
+                                                                horarioManual === horario
+                                                                    ? "border-destaque bg-destaque text-white"
+                                                                    : "border-destaque/30 bg-primary text-tertiary hover:bg-secondary"
+                                                            }`}
+                                                        >
+                                                            {horario}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="mt-3 text-sm text-gray-600" aria-live="polite">
+                                                {horarioManual
+                                                    ? `Horário selecionado: ${horarioManual} · Término previsto: ${calcularHorarioTermino(horarioManual, Number(duracaoManual))}`
+                                                    : "Selecione um horário para continuar."}
+                                            </p>
+                                        </>
                                     )}
-                                    <p className="mt-3 text-sm text-gray-600" aria-live="polite">
-                                        {horarioManual
-                                            ? `Horário selecionado: ${horarioManual} · Término previsto: ${calcularHorarioTermino(horarioManual, Number(duracaoManual))}`
-                                            : "Selecione um horário para continuar."}
-                                    </p>
                                 </>
                             ) : (
-                                <label className="block min-w-0 max-w-sm text-sm font-medium text-gray-700">
-                                    Horário do atendimento anterior
-                                    <input
-                                        type="time"
-                                        value={horarioManual}
-                                        onChange={(event) => setHorarioManual(event.target.value)}
-                                        required
-                                        className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
-                                    />
-                                </label>
+                                !servicoManual ? (
+                                    <p className="rounded-xl bg-primary p-4 text-sm text-info">
+                                        Selecione um serviço para informar o horário do atendimento.
+                                    </p>
+                                ) : (
+                                    <label className="block min-w-0 max-w-sm text-sm font-medium text-gray-700">
+                                        Horário do atendimento anterior
+                                        <input
+                                            type="time"
+                                            value={horarioManual}
+                                            onChange={(event) => setHorarioManual(event.target.value)}
+                                            required
+                                            className="mt-1 box-border w-full min-w-0 rounded-xl border border-gray-300 bg-gray-50 p-3"
+                                        />
+                                    </label>
+                                )
                             )}
                         </div>
                         <label className="block min-w-0 text-sm font-medium text-gray-700">
@@ -799,7 +840,7 @@ export default function AdminDashboard({ activeTab }) {
                             <p role="status" className="min-w-0 break-words text-sm text-green-700">{mensagemCadastroManual}</p>
                             <button
                                 type="submit"
-                                disabled={salvandoAgendamento}
+                                disabled={salvandoAgendamento || (agendamentoManualFuturo && (carregandoConfiguracao || Boolean(erroConfiguracao)))}
                                 className="w-full shrink-0 rounded-xl bg-destaque px-6 py-3 font-semibold text-white transition hover:scale-[1.02] sm:w-auto"
                             >
                                 {salvandoAgendamento
