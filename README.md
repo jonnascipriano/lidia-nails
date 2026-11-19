@@ -1,6 +1,6 @@
 # Lídia Nails
 
-Aplicação de painel administrativo para gerenciar serviços, agenda e faturamento. Após entrar, o **Resumo** financeiro é exibido primeiro. As abas **Agendar**, **Resumo**, **Gastos**, **Histórico** e **Lista de Agendamentos** organizam as demais funções.
+Aplicação de painel administrativo para gerenciar serviços, agenda e faturamento. Após entrar, o **Resumo** financeiro é exibido primeiro. As abas **Resumo**, **Agendar**, **Lista de Agendamentos**, **Histórico** e **Gastos** organizam as demais funções.
 Em dispositivos móveis, instale o app pela tela de acesso ou no painel. Ele abre diretamente na rota administrativa, que solicita login se necessário, e mantém a sessão após fechar e reabrir o app.
 
 ## Configuração do Firebase

@@ -12,11 +12,11 @@ const HistoricoDashboard = lazy(() => import("./HistoricoDashboard"));
 const LinhaTempoDashboard = lazy(() => import("./LinhaTempoDashboard"));
 
 const abas = [
-    { id: "agendar", rotulo: "Agendar", caminho: "/admin/agendar" },
     { id: "resumo", rotulo: "Resumo", caminho: "/admin/resumo" },
-    { id: "gastos", rotulo: "Gastos", caminho: "/admin/gastos" },
-    { id: "historico", rotulo: "Histórico", caminho: "/admin/historico" },
+    { id: "agendar", rotulo: "Agendar", caminho: "/admin/agendar" },
     { id: "linha-do-tempo", rotulo: "Lista de Agendamentos", caminho: "/admin/linha-do-tempo" },
+    { id: "historico", rotulo: "Histórico", caminho: "/admin/historico" },
+    { id: "gastos", rotulo: "Gastos", caminho: "/admin/gastos" },
 ];
 
 const carregando = (
