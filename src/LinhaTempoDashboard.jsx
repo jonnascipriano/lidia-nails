@@ -51,7 +51,6 @@ const formatarMoeda = (valor) => new Intl.NumberFormat("pt-BR", {
 
 export default function LinhaTempoDashboard() {
     const [data, setData] = useState(obterDataLocal);
-    const [agora, setAgora] = useState(() => new Date());
     const [agendamentos, setAgendamentos] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
@@ -68,11 +67,6 @@ export default function LinhaTempoDashboard() {
         }
     ), []);
 
-    useEffect(() => {
-        const intervalo = setInterval(() => setAgora(new Date()), 60 * 1000);
-        return () => clearInterval(intervalo);
-    }, []);
-
     const atendimentosDoDia = agendamentos
         .filter((agendamento) => agendamento.data === data)
         .map((agendamento) => {
@@ -87,15 +81,10 @@ export default function LinhaTempoDashboard() {
         (termino, agendamento) => Math.max(termino, agendamento.fim),
         0
     );
-    const minutosTrabalhados = atendimentosDoDia.reduce((total, agendamento) => {
-        if (data < obterDataLocal(agora)) return total + agendamento.duracao;
-        if (data !== obterDataLocal(agora)) return total;
-        const minutoAtual = agora.getHours() * 60 + agora.getMinutes();
-        return total + Math.min(
-            agendamento.duracao,
-            Math.max(0, minutoAtual - agendamento.inicio)
-        );
-    }, 0);
+    const minutosPrevistos = atendimentosDoDia.reduce(
+        (total, agendamento) => total + agendamento.duracao,
+        0
+    );
 
     return (
         <section className="space-y-6">
@@ -127,8 +116,8 @@ export default function LinhaTempoDashboard() {
                         Não há agendamentos com horário marcado neste dia.
                     </p>
                     <aside className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                        <p className="text-sm font-medium text-info">Horas trabalhadas no dia</p>
-                        <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosTrabalhados)}</p>
+                        <p className="text-sm font-medium text-info">Horas previstas no dia</p>
+                        <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosPrevistos)}</p>
                     </aside>
                 </>
             ) : (
@@ -183,8 +172,8 @@ export default function LinhaTempoDashboard() {
                                 <p className="mt-1 text-2xl font-bold text-destaque">{formatarHorario(terminoFinal)}</p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-info">Horas trabalhadas no dia</p>
-                                <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosTrabalhados)}</p>
+                                <p className="text-sm font-medium text-info">Horas previstas no dia</p>
+                                <p className="mt-1 text-2xl font-bold text-emerald-800">{formatarDuracao(minutosPrevistos)}</p>
                             </div>
                         </div>
                     </aside>

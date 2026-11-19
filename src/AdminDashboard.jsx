@@ -879,20 +879,22 @@ export default function AdminDashboard({ activeTab }) {
                             Carregando agendamentos...
                         </div>
                     ) : (
-                        <div className="grid items-start gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
-                            <aside className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                                <h3 className="text-sm font-bold text-tertiary">Calendário da agenda</h3>
-                                <label className="mt-3 block text-sm font-medium text-gray-700">
-                                    Escolher data
-                                    <input
-                                        type="date"
-                                        value={dataAgendaSelecionada}
-                                        onChange={(event) => selecionarDataAgenda(event.target.value)}
-                                        className="mt-1 w-full rounded-xl border border-gray-300 bg-white p-2.5 text-sm focus:border-destaque focus:outline-none"
-                                    />
-                                </label>
-                                <p className="mb-2 mt-4 text-xs font-medium text-gray-500">Próximos dias</p>
-                                <div className="max-h-[28rem] space-y-2 overflow-y-auto">
+                        <div className="space-y-5">
+                            <div>
+                                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                                    <h3 className="text-sm font-bold text-tertiary">Escolha um dia</h3>
+                                    <label className="flex items-center gap-2 text-xs font-medium text-info">
+                                        Outra data
+                                        <input
+                                            type="date"
+                                            value={dataAgendaSelecionada}
+                                            onChange={(event) => selecionarDataAgenda(event.target.value)}
+                                            aria-label="Escolher outra data"
+                                            className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-tertiary focus:border-destaque focus:outline-none"
+                                        />
+                                    </label>
+                                </div>
+                                <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-2" role="group" aria-label="Dias da agenda">
                                     {diasProximos.map((dia) => {
                                         const selecionado = dataAgendaSelecionada === dia.valor;
                                         return (
@@ -901,24 +903,24 @@ export default function AdminDashboard({ activeTab }) {
                                                 type="button"
                                                 onClick={() => selecionarDataAgenda(dia.valor)}
                                                 aria-pressed={selecionado}
-                                                className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition ${
+                                                className={`flex min-h-[74px] min-w-[76px] shrink-0 flex-col items-center justify-center rounded-xl border px-2 py-2 text-center transition ${
                                                     selecionado
                                                         ? "border-destaque bg-rose-50 text-rose-900"
                                                         : "border-gray-200 bg-white text-tertiary hover:border-destaque/50"
                                                 }`}
                                             >
-                                                <span className="min-w-0">
-                                                    <span className="block text-xs font-medium capitalize">{dia.rotulo}</span>
-                                                    <span className="text-sm font-semibold">{dia.data}</span>
-                                                </span>
-                                                <span className="shrink-0 rounded-full bg-primary px-2 py-1 text-xs text-info">
-                                                    {dia.quantidadeAgendamentos}
-                                                </span>
+                                                <span className="text-xs font-medium uppercase">{dia.rotulo}</span>
+                                                <span className="mt-0.5 text-sm font-semibold">{dia.data}</span>
+                                                {dia.quantidadeAgendamentos > 0 && (
+                                                    <span className="mt-1 whitespace-nowrap text-[10px] font-semibold leading-tight text-destaque">
+                                                        {dia.quantidadeAgendamentos} agend.
+                                                    </span>
+                                                )}
                                             </button>
                                         );
                                     })}
                                 </div>
-                            </aside>
+                            </div>
 
                             <div className="min-w-0">
                                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
