@@ -1,5 +1,5 @@
 {
-  "homepage": "https://github.com/jonnascipriano/lidia-nails",
+  "homepage": "https://jonnascipriano.github.io/lidia-nails/",
   "name": "lidia-nails",
   "private": true,
   "version": "0.0.0",
@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "vite build --base=/lidia-nails/",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist -r https://github.com/jonnascipriano/lidia-nails.git"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
