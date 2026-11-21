@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { observarAgendamentos } from "./agendamentosFirebase";
+import { excluirAgendamento, observarAgendamentos } from "./agendamentosFirebase";
 
 const obterDataLocal = () => {
     const hoje = new Date();
@@ -61,6 +61,22 @@ export default function LinhaTempoDashboard() {
     const [agendamentos, setAgendamentos] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
+    const [removendoId, setRemovendoId] = useState("");
+
+    const removerAgendamento = async (agendamento) => {
+        const nome = agendamento.nomeCliente || "este cliente";
+        if (!window.confirm(`Desmarcar o agendamento de ${nome}?`)) return;
+
+        setRemovendoId(agendamento.id);
+        setErro("");
+        try {
+            await excluirAgendamento(agendamento.id);
+        } catch (erroRemocao) {
+            setErro(`Não foi possível desmarcar o agendamento: ${erroRemocao.message}`);
+        } finally {
+            setRemovendoId("");
+        }
+    };
 
     useEffect(() => observarAgendamentos(
         (lista) => {
@@ -225,6 +241,14 @@ export default function LinhaTempoDashboard() {
                                                     Término previsto · {formatarHorario(agendamento.fim)}
                                                 </p>
                                                 <p className="mt-1 text-info">Duração · {formatarDuracao(agendamento.duracao)}</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removerAgendamento(agendamento)}
+                                                    disabled={removendoId === agendamento.id}
+                                                    className="mt-3 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
+                                                >
+                                                    {removendoId === agendamento.id ? "Desmarcando..." : "Desmarcar"}
+                                                </button>
                                             </div>
                                         </div>
                                     </article>
